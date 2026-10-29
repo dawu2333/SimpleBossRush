@@ -2,17 +2,6 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-
-
-
-
-
-Assets/TextMesh Pro
-Assets/Materials
-Assets/MilkyWay
-Assets/Prefabs
-Assets/Resources
-
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/
@@ -40,7 +29,6 @@ extensions.txt
 # Visual Studio cache directory
 .vs/
 .vscode/
-Packages/
 
 # Gradle cache directory
 .gradle/
@@ -83,6 +71,9 @@ crashlytics-build.properties
 
 # Packed Addressables
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/Assets/Unity.VisualScripting.Generated/
+/Assets/Unity.VisualScripting.Generated.meta
+/Assets/Unity.VisualScripting.Generated/
 
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta

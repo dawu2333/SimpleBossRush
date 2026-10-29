@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameControl : MonoBehaviour{
-    public GameObject bossPrefabs;
+    [SerializeField] private GameObject bossPrefabs;
     private AudioSource audioSource;
     private AudioClip BGM1,BGM2;
     private bool isEscape;
@@ -17,6 +17,7 @@ public class GameControl : MonoBehaviour{
         BGM2 = Resources.Load<AudioClip>("BGM/Crusade");    
     }
     void Start(){
+        Time.timeScale=1;
         audioSource.clip=level>=3?BGM1:BGM2;
         audioSource.Play();
         audioSource.volume=0.1f;//音量百分比
@@ -24,17 +25,13 @@ public class GameControl : MonoBehaviour{
         //Debug.Log("GameControl,level="+level);
     }
 
-    // Update is called once per frame
     void Update(){
         PauseGame();
     }
     void PauseGame(){
-        if(Input.GetKeyDown(KeyCode.Escape)&&!isEscape){
-            Time.timeScale=0;
-            isEscape=true;
-        }else if(Input.GetKeyDown(KeyCode.Escape)&&isEscape){
-            Time.timeScale=1;
-            isEscape=false;
+        if(Input.GetKeyDown(KeyCode.Escape)){
+            isEscape=!isEscape;
+            Time.timeScale=isEscape?0:1;
         }
     }
     

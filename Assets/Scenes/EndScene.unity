@@ -507,9 +507,9 @@ MonoBehaviour:
   PlayerHpInput: {fileID: 0}
   DifficultyChoice: {fileID: 0}
   LevelChoice: {fileID: 0}
-  AffectedText: {fileID: 131940905}
-  AffectedArea: {fileID: 1249461129}
-  Title: {fileID: 930879811}
+  AffectedNumberText: {fileID: 131940907}
+  AffectedNumberArea: {fileID: 1249461129}
+  Title: {fileID: 930879813}
 --- !u!82 &696732901
 AudioSource:
   m_ObjectHideFlags: 0

@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 860a66ca4259b384f9ec01b687f71c3c, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.012485673, g: 0.010887542, b: 0.013293892, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -309,11 +309,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3288815531018199779, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
   m_PrefabInstance: {fileID: 261746133}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &261746135 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6947512179535213893, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
+--- !u!114 &261746136 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3371190399703590356, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
   m_PrefabInstance: {fileID: 261746133}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &312600044
 GameObject:
   m_ObjectHideFlags: 0
@@ -778,12 +784,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1dac92fcc6105742815cd32f94b9213, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BossHpInput: {fileID: 538435949}
-  PlayerHpInput: {fileID: 2087375729}
-  DifficultyChoice: {fileID: 747553065}
-  LevelChoice: {fileID: 261746135}
-  AffectedText: {fileID: 0}
-  AffectedArea: {fileID: 0}
+  BossHpInput: {fileID: 538435951}
+  PlayerHpInput: {fileID: 2087375731}
+  DifficultyChoice: {fileID: 747553067}
+  LevelChoice: {fileID: 261746136}
+  AffectedNumberText: {fileID: 0}
+  AffectedNumberArea: {fileID: 0}
   Title: {fileID: 0}
 --- !u!1001 &747553063
 PrefabInstance:
@@ -887,11 +893,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3288815531018199779, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
   m_PrefabInstance: {fileID: 747553063}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &747553065 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6947512179535213893, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
+--- !u!114 &747553067 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3371190399703590356, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
   m_PrefabInstance: {fileID: 747553063}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &758840515
 GameObject:
   m_ObjectHideFlags: 0
@@ -1338,13 +1350,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 917616769}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.50468844, g: 0.6603774, b: 0.45478815, a: 1}
+  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2213,7 +2225,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1829955971}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &1829955973
 Camera:
   m_ObjectHideFlags: 0

@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 860a66ca4259b384f9ec01b687f71c3c, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -256,11 +255,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 12540117}
   m_CullTransparentMesh: 1
---- !u!1 &67799037 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6947512179535213893, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
-  m_PrefabInstance: {fileID: 8752905520647322847}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &192065817
 GameObject:
   m_ObjectHideFlags: 0
@@ -911,9 +905,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BossHpInput: {fileID: 0}
   PlayerHpInput: {fileID: 0}
-  DifficultyChoice: {fileID: 67799037}
-  AffectedText: {fileID: 0}
-  AffectedArea: {fileID: 0}
+  DifficultyChoice: {fileID: 8752905520647322848}
+  LevelChoice: {fileID: 0}
+  AffectedNumberText: {fileID: 0}
+  AffectedNumberArea: {fileID: 0}
   Title: {fileID: 0}
 --- !u!1 &758840515
 GameObject:
@@ -1227,7 +1222,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 917616769}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -2184,7 +2179,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2007831366
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2616,7 +2611,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2879371559710546530, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
       propertyPath: m_Name
-      value: DifficultyChooseArea
+      value: DifficultyChoiseArea
       objectReference: {fileID: 0}
     - target: {fileID: 3288815531018199779, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
       propertyPath: m_Pivot.x
@@ -2703,6 +2698,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
+--- !u!114 &8752905520647322848 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3371190399703590356, guid: 94a4e9cd6ba6e0f4d9b7e4ffbf2089da, type: 3}
+  m_PrefabInstance: {fileID: 8752905520647322847}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -1,18 +1,15 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class Boss : MonoBehaviour{
-    public float speed;
-    public int hp;
-    public GameObject bulletPrefabs;
-    public GameObject laserPrefabs;
-    public GameObject preLaserPrefabs;
-    public GameObject rotateLaserPrefabs;
-    public GameObject rotatePreLaserPrefabs;
+    [SerializeField] private float speed;
+    [SerializeField] private int hp;
+    [SerializeField] private GameObject bulletPrefabs;
+    [SerializeField] private GameObject laserPrefabs;
+    [SerializeField] private GameObject preLaserPrefabs;
+    [SerializeField] private GameObject rotateLaserPrefabs;
+    [SerializeField] private GameObject rotatePreLaserPrefabs;
     private string difficulty;
     private int MaxHP,level;
     private Transform hpbar;
@@ -59,14 +56,16 @@ public class Boss : MonoBehaviour{
         playerTransform=GameObject.Find("player").transform;
         count=MaxCount-1;
         StartCoroutine(CountPlus());
-        direction = UnityEngine.Random.Range(1, 9);
-        tempSpeed=this.speed;
-        a=UnityEngine.Random.Range(1,11);
+        direction = Random.Range(1, 9);
+        tempSpeed=speed;
+        a=GetNewAttack();
+        //a=Random.Range(1,11);
         //Debug.Log("Bosshp="+hp+"level="+level);
         
     }
 
     void Update(){
+        if (playerTransform == null) return;
         BossMoveAI();
         BossAttackAI();
         //HandBossAttack();
@@ -90,6 +89,7 @@ public class Boss : MonoBehaviour{
         hpbar.transform.localPosition=new Vector3(posXValue,hpbar.transform.localPosition.y,hpbar.transform.localPosition.z);
         hpbar.transform.localScale=new Vector3(scaleXValue,hpbar.transform.localScale.y,hpbar.transform.localScale.z);
         if(hp<=0){
+            StopAllCoroutines();
             Destroy(gameObject);
             PlayerPrefs.SetInt("IsWin",1);
             SceneManager.LoadScene("EndScene");
@@ -116,13 +116,13 @@ public class Boss : MonoBehaviour{
                         difficulty=="Hard"?BossAttackChoice(a)*0.5f:
                         difficulty=="Extreme"?RandomAttack(a)*0.6f:1f;
         if(level==5&&i%2==0){
-            BossAttackChoice(BossAttackList2[UnityEngine.Random.Range(0, BossAttackList2.Length)]);
+            BossAttackChoice(BossAttackList2[Random.Range(0, BossAttackList2.Length)]);
             i++;
         }
         i++; current_time = 0;
         if(isLaser)speed=0;else speed=tempSpeed;
     } else if (current_time >= attack_time && i >= t) {
-        t = UnityEngine.Random.Range(2, 4);
+        t = Random.Range(2, 4);
         a = GetNewAttack();
         i = 0; current_time = level!=5?attack_time / 2:0;
     }
@@ -131,7 +131,7 @@ public class Boss : MonoBehaviour{
     int GetNewAttack() {
     int newAttack;
     do {
-        newAttack = difficulty!="Extreme"?BossAttackList[UnityEngine.Random.Range(0, BossAttackList.Length)]:ExtremeAttackList[UnityEngine.Random.Range(0, ExtremeAttackList.Length)];
+        newAttack = difficulty!="Extreme"?BossAttackList[Random.Range(0, BossAttackList.Length)]:ExtremeAttackList[Random.Range(0, ExtremeAttackList.Length)];
     } while (newAttack == lastAttack); // 确保新选择的攻击方式与上次不同
     lastAttack = newAttack; // 更新上一次的攻击方式
     return newAttack;
@@ -156,9 +156,9 @@ public class Boss : MonoBehaviour{
 
     float RandomAttack(int i){
         switch(i){
-            case 1: SingleAttack(UnityEngine.Random.Range(1,3),UnityEngine.Random.Range(2.5f,9f),colors[UnityEngine.Random.Range(0,colors.Length)],UnityEngine.Random.Range(2.5f,6),UnityEngine.Random.Range(0,2)>0?true:false);t=UnityEngine.Random.Range(5,10); return UnityEngine.Random.Range(0.1f,.8f);
-            case 2:StartCoroutine(ContinuousScatterAttack(UnityEngine.Random.Range(1,3),UnityEngine.Random.Range(2.5f,5.5f), colors[UnityEngine.Random.Range(0,colors.Length)], UnityEngine.Random.Range(0.8f,2), UnityEngine.Random.Range(10,40), UnityEngine.Random.Range(5,20), UnityEngine.Random.Range(.5f,1f), UnityEngine.Random.Range(3,7))); return UnityEngine.Random.Range(1.1f,3.2f);
-            case 3:LaserAttack(UnityEngine.Random.Range(1,3),UnityEngine.Random.Range(.3f,.9f),UnityEngine.Random.Range(.4f,1f),UnityEngine.Random.Range(.4f,.8f),UnityEngine.Random.Range(1,8),UnityEngine.Random.Range(8,14),5);t=UnityEngine.Random.Range(1,8);return UnityEngine.Random.Range(.4f,1f);
+            case 1: SingleAttack(Random.Range(1,3),Random.Range(2.5f,9f),colors[Random.Range(0,colors.Length)],Random.Range(2.5f,6),Random.Range(0,2)>0?true:false);t=Random.Range(5,10); return Random.Range(0.1f,.8f);
+            case 2:StartCoroutine(ContinuousScatterAttack(Random.Range(1,3),Random.Range(2.5f,5.5f), colors[Random.Range(0,colors.Length)], Random.Range(0.8f,2), Random.Range(10,40), Random.Range(5,20), Random.Range(.5f,1f), Random.Range(3,7))); return Random.Range(1.1f,3.2f);
+            case 3:LaserAttack(Random.Range(1,3),Random.Range(.3f,.9f),Random.Range(.4f,1f),Random.Range(.4f,.8f),Random.Range(1,8),Random.Range(8,14),5);t=Random.Range(1,8);return Random.Range(.4f,1f);
         }
         return 1f;
     }
@@ -240,6 +240,7 @@ public class Boss : MonoBehaviour{
     }
 
     IEnumerator RotationLaserAttack(int damage,float rotateSpeed,float duration, float width,int laserCount, float spreadAngle, float baseAngle){
+        if (playerTransform == null) yield break; 
         isLaser=true;
         gameObject.transform.position=new Vector3(0,0,-2);
         Vector2 playerPosition = playerTransform.position;
@@ -289,7 +290,7 @@ public class Boss : MonoBehaviour{
             Move(direction);
         }
         if(count > MaxCount){
-            direction = UnityEngine.Random.Range(1, 9); // 方向范围从1到8
+            direction = Random.Range(1, 9); // 方向范围从1到8
             count = 0;
         }
     }
@@ -328,7 +329,7 @@ public class Boss : MonoBehaviour{
     IEnumerator CountPlus(){
         while(true){
             count++;
-            yield return new WaitForSeconds(UnityEngine.Random.Range(0.1f, 0.3f));
+            yield return new WaitForSeconds(Random.Range(0.1f, 0.3f));
         }
     }
 
