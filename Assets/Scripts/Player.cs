@@ -1,7 +1,5 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour{
@@ -10,14 +8,12 @@ public class Player : MonoBehaviour{
     public int hp,level;
     public float attack_time;//攻击间隔
     private float current_time;//冷却时间
-    private float x=17.5f,y=9.5f;
+    private readonly float boundX = 17.5f,boundY = 9.5f;
     private Transform hpBar;
     private int MaxHP;
     private bool canAffected=false;
     void Awake() {
         hpBar=transform.GetChild(0).GetChild(1);//获取血条
-        hpBar.SetParent(transform.GetChild(0),false);
-        transform.GetChild(0).SetParent(transform,false);
     }
     void Start(){
         Invoke("StartGameCanAffected", 2);
@@ -44,19 +40,19 @@ public class Player : MonoBehaviour{
     }
 
     void Move(){
-        if(transform.position.x<=x&&transform.position.x>=-x&&transform.position.y<=y&&transform.position.y>=-y){
+        if(transform.position.x<=boundX&&transform.position.x>=-boundX&&transform.position.y<=boundY&&transform.position.y>=-boundY){
             if(Input.GetKey(KeyCode.W)){transform.position+=Vector3.up*speed*Time.deltaTime;}
             if(Input.GetKey(KeyCode.S)){transform.position+=Vector3.down*speed*Time.deltaTime;}
             if(Input.GetKey(KeyCode.A)){transform.position+=Vector3.left*speed*Time.deltaTime;}
             if(Input.GetKey(KeyCode.D)){transform.position+=Vector3.right*speed*Time.deltaTime;}
         }
-        else if(transform.position.x>x){
+        else if(transform.position.x>boundX){
             transform.position=new Vector3(17.49f,transform.position.y,transform.position.z);
-        }else if(transform.position.x<-x){
+        }else if(transform.position.x<-boundX){
             transform.position=new Vector3(-17.49f,transform.position.y,transform.position.z);
-        }else if(transform.position.y>y){
+        }else if(transform.position.y>boundY){
             transform.position=new Vector3(transform.position.x,9.49f,transform.position.z);
-        }else if(transform.position.y<-y){
+        }else if(transform.position.y<-boundY){
             transform.position=new Vector3(transform.position.x,-9.49f,transform.position.z);
         }
     }

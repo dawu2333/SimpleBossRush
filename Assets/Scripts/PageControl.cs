@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,7 +14,6 @@ public class PageControl : MonoBehaviour{
     private bool isStartMenu,isLevelChoice,isDebugScene,isEndScene;
     private string[] difficulty = {"Easy", "Normal", "Hard","Extreme"};
     private string selectedDifficulty;
-    private int selectedLevel2;
 
     //EndScene
     [SerializeField] private TMP_Text AffectedNumberText;
@@ -53,7 +50,6 @@ public class PageControl : MonoBehaviour{
         int PlayerHp = int.TryParse(PlayerHpInput.text, out int php) && php > 0 ? php : 10;
         int BossHp = int.TryParse(BossHpInput.text, out int bhp) && bhp > 0 ? bhp : 200;
         int selectedLevel=LevelChoice.value+1;
-        //selectedDifficulty = difficulty[DifficultyChoice.value];
         selectedDifficulty=DifficultyChoice.options[DifficultyChoice.value].text;
 
         PlayerPrefs.SetInt("Level",selectedLevel);
@@ -81,6 +77,10 @@ public class PageControl : MonoBehaviour{
         SceneManager.LoadScene("MainScene");
     }
     public void Retry(){
+        #if UNITY_EDITOR
+        if(PlayerPrefs.GetInt("t")==1){SceneManager.LoadScene("TempScene");PlayerPrefs.SetInt("t",0);return;}
+        #endif
+        
         PlayerPrefs.SetInt("Affected",0);
         SceneManager.LoadScene("MainScene");
     }

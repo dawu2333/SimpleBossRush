@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 8473060170229952359}
   m_Layer: 0
   m_Name: player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -100,9 +100,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47ffe57022e30dc42976eeffaf21749d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefabs: {fileID: 6683000712616573549, guid: cf1ca861278a21441aab720aa8b917bc, type: 3}
+  bulletPrefabs: {fileID: 7695200875543056793, guid: 50c18b6a0ee84a8498e3cc2992533f1c, type: 3}
   speed: 10
   hp: 10
+  level: 0
   attack_time: 0.2
 --- !u!50 &2597622657792449593
 Rigidbody2D:
