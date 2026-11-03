@@ -224,7 +224,7 @@ MonoBehaviour:
   preLaserPrefabs: {fileID: 3847187650433377793, guid: 49f609963649a154590f85f4bcd2bbfe, type: 3}
   rotateLaserPrefabs: {fileID: 2004331661015668188, guid: 394555d4c26f52044b51d7d7cb24e5ae, type: 3}
   rotatePreLaserPrefabs: {fileID: 3187070459149735447, guid: 09fce5abaa22b1d47bb5ba575e37471f, type: 3}
-  gameControl: {fileID: 0}
+  hpbar: {fileID: 8934719755670630197}
 --- !u!58 &3824308693616919765
 CircleCollider2D:
   m_ObjectHideFlags: 0

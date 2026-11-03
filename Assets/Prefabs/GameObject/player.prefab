@@ -105,6 +105,7 @@ MonoBehaviour:
   hp: 10
   level: 0
   attack_time: 0.2
+  hpBar: {fileID: 8954536869894635054}
 --- !u!50 &2597622657792449593
 Rigidbody2D:
   serializedVersion: 4

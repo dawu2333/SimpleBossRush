@@ -31,16 +31,7 @@ public class PageControl : MonoBehaviour{
     }
     void Start(){
         if(!isEndScene)return;
-        bool isWin=PlayerPrefs.GetInt("IsWin")==1;
-        audioSource=GetComponent<AudioSource>();
-        if(!isWin){
-            AffectedNumberArea.SetActive(false);
-            audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Lose"));
-        }else{
-            AffectedNumberText.text=PlayerPrefs.GetInt("Affected").ToString();
-            audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Win"));
-        }
-        Title.text=isWin?"You Win!":"You Lose!";
+        EnterEndScene();
     }
     public void StartGame(){
         if(!isStartMenu&&!isDebugScene)return;
@@ -61,26 +52,16 @@ public class PageControl : MonoBehaviour{
         SceneManager.LoadScene("MainScene");
     }
     public void StartGame(int level){
-        int PHP=10,BHP=200;
-        PlayerPrefs.SetInt("Level",level);
-        if(level==1){PHP=10;BHP=200;}
-        else if(level==2){PHP=10;BHP=250;}
-        else if(level==3){PHP=15;BHP=400;}
-        else if(level==4){PHP=25;BHP=150;}
-        else if(level==5){PHP=20;BHP=800;}
-
-        PlayerPrefs.SetInt("Affected",0);
-        PlayerPrefs.SetInt("PlayerHP",PHP);
-        PlayerPrefs.SetInt("BossHP",BHP);
+        if(level<1 || level>=LevelData.levels.Length) level=1;
         selectedDifficulty=DifficultyChoice.options[DifficultyChoice.value].text;
+        
+        PlayerPrefs.SetInt("Level",level);
+        PlayerPrefs.SetInt("Affected",0);
         PlayerPrefs.SetString("Difficulty",selectedDifficulty);
+
         SceneManager.LoadScene("MainScene");
     }
     public void Retry(){
-        #if UNITY_EDITOR
-        if(PlayerPrefs.GetInt("t")==1){SceneManager.LoadScene("TempScene");PlayerPrefs.SetInt("t",0);return;}
-        #endif
-        
         PlayerPrefs.SetInt("Affected",0);
         SceneManager.LoadScene("MainScene");
     }
@@ -93,6 +74,18 @@ public class PageControl : MonoBehaviour{
     }
     public void Back(){SceneManager.LoadScene("StartMenu");}
     public void EnterDebug(){SceneManager.LoadScene("DebugScene");}
+    public void EnterEndScene(){
+        bool isWin=PlayerPrefs.GetInt("IsWin")==1;
+        audioSource=GetComponent<AudioSource>();
+        if(!isWin){
+            AffectedNumberArea.SetActive(false);
+            audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Lose"));
+        }else{
+            AffectedNumberText.text=PlayerPrefs.GetInt("Affected").ToString();
+            audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Win"));
+        }
+        Title.text=isWin?"You Win!":"You Lose!";
+    }
     private void InitDifficultyChoiceDropDown(){
         DifficultyChoice.ClearOptions();
         foreach (var item in difficulty) {
