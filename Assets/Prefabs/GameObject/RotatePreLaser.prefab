@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5960238671727227801}
   m_Layer: 0
   m_Name: RotatePreLaser
-  m_TagString: Untagged
+  m_TagString: Laser
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -101,6 +101,7 @@ MonoBehaviour:
   damage: 0
   width: 0.75
   rotateSpeed: 0
+  laserType: 0
 --- !u!61 &5960238671727227801
 BoxCollider2D:
   m_ObjectHideFlags: 0

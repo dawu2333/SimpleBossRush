@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class GameControl : MonoBehaviour{
     public static GameControl Instance { get; private set; }
+    public BulletPool BulletPool{get;private set;}
     [SerializeField] private GameObject bossPrefabs, playerPrefabs;
     private AudioSource audioSource;
     private AudioClip BGM1,BGM2;
@@ -12,6 +13,7 @@ public class GameControl : MonoBehaviour{
     const float Spacing = 14f;
     void Awake() {
         if(Instance==null)Instance=this;
+        BulletPool=GetComponent<BulletPool>();
         isEscape=false;
         audioSource = GetComponent<AudioSource>();
         audioSource.loop=true;

@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Boss : MonoBehaviour{
     static readonly Color[] colors={Color.red,Color.blue,Color.cyan,Color.black,Color.green,Color.yellow};
@@ -60,11 +62,13 @@ public class Boss : MonoBehaviour{
     }
 
     void OnTriggerEnter2D(Collider2D other){
-        //Debug.Log("hit");
-        if(other.gameObject.tag == "Bullet"){
-            UpdateHp(1);
+        if(other.TryGetComponent(out Bullet otherBullet) && otherBullet.Faction == Faction.Player){
+            UpdateHp(other.GetComponent<Bullet>().Damage);
             StartCoroutine(Affected());
             Destroy(other.gameObject);
+        }else if(other.TryGetComponent(out Laser otherLaser) && otherLaser.Faction == Faction.Player){
+            UpdateHp(other.GetComponentInParent<Laser>().Damage);
+            StartCoroutine(Affected());
         }
     }
 
@@ -113,122 +117,112 @@ public class Boss : MonoBehaviour{
         }
     }
     void BossAttackAI() {
-    current_time += Time.deltaTime;
-    if (current_time >= attack_time && burstCount < burstMax) {
-        attack_time=(difficulty!="Extreme"?BossAttackChoice(currentAttack):RandomAttack(currentAttack))*frequency;
-        if(level==5&&burstCount%2==0){//第五关每两次攻击后随机选择一次攻击方式
-            BossAttackChoice(BossAttackList2[Random.Range(0, BossAttackList2.Length)]);
-            burstCount++;
+        if(playerTransform==null)return;//找不到玩家不攻击
+        current_time += Time.deltaTime;
+        if (current_time >= attack_time && burstCount < burstMax) {
+            attack_time=(difficulty!="Extreme"?BossAttackChoice(currentAttack):RandomAttack(currentAttack))*frequency;
+            if(level==5&&burstCount%2==0){//第五关每两次攻击后随机选择一次攻击方式
+                BossAttackChoice(BossAttackList2[Random.Range(0, BossAttackList2.Length)]);
+                burstCount++;
+            }
+            burstCount++; current_time = 0;
+            if(isLaser)speed=0;else speed=tempSpeed;
+        } else if (current_time >= attack_time && burstCount >= burstMax) {
+            burstMax = Random.Range(2, 4);
+            currentAttack = GetNewAttack();
+            burstCount = 0; current_time = level!=5?attack_time / 2:0;
         }
-        burstCount++; current_time = 0;
-        if(isLaser)speed=0;else speed=tempSpeed;
-    } else if (current_time >= attack_time && burstCount >= burstMax) {
-        burstMax = Random.Range(2, 4);
-        currentAttack = GetNewAttack();
-        burstCount = 0; current_time = level!=5?attack_time / 2:0;
-    }
 
 }
     int GetNewAttack() {
-    int newAttack;
-    do {
-        newAttack = difficulty!="Extreme"?BossAttackList[Random.Range(0, BossAttackList.Length)]:ExtremeAttackList[Random.Range(0, ExtremeAttackList.Length)];
-    } while (newAttack == lastAttack); // 确保新选择的攻击方式与上次不同
-    lastAttack = newAttack; // 更新上一次的攻击方式
-    return newAttack;
-}
+        int newAttack;
+        do {
+            newAttack = difficulty!="Extreme"?BossAttackList[Random.Range(0, BossAttackList.Length)]:ExtremeAttackList[Random.Range(0, ExtremeAttackList.Length)];
+        } while (newAttack == lastAttack); // 确保新选择的攻击方式与上次不同
+        lastAttack = newAttack; // 更新上一次的攻击方式
+        return newAttack;
+    }
 
     float BossAttackChoice(int i){
         //Debug.Log(i);
         switch(i){
-            case 1: isLaser = false; SingleAttack(1,3,Color.white,1f,false);burstMax=10;audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot1")); return .1f;//伤害、弹速均一般的短连发攻击
-            case 2: isLaser = false; SingleAttack(1,6.5f,Color.yellow,1.4f,false);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/283")); return .5f;//射速较快且弹速快，伤害一般的攻击
-            case 3: isLaser = false; SingleAttack(2,1f,Color.red,10f,true);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/510")); return 2f;//射速和弹速较慢，伤害较大的攻击
-            case 4: isLaser = false; ScatterAttack(1,3f,Color.blue,1.4f,8,7.5f,0);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/406")); return 2.5f;//射速较慢，伤害一般，弹速些微慢的八发子弹扇形攻击
-            case 5: isLaser = false; ScatterAttack(1,1f,Color.green,1.3f,50,7.2f,0);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/GunShot2")); return 3f;//射速很慢，伤害一般，弹速较慢的单词全屏广域攻击
-            case 6: isLaser = false; SingleAttack(1,3.5f,Color.cyan,1.5f,false);burstMax=50;audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot2")); return .1f;//射速极快、弹速较快，伤害与弹速一般的自机连续攻击
-            case 7: isLaser = false; StartCoroutine(ContinuousScatterAttack(1, .8f, new Color(1.0f, 0.753f, 0.796f), 1.3f, level!=5?40:30, level!=5?9:12, 0.5f, 10)); return 6f; // 射速很快，伤害一般，弹速较慢的持续全屏广域攻击(波粒)
-            case 8: isLaser = true; LaserAttack(3,.8f,.5f,1,8,15,1);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot2"));return 1f;//散射激光
-            case 9: isLaser = true; LaserAttack(3,.4f,.4f,.8f,1,10,5);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot1"));burstMax=20;return .15f;//快速的激光自机狙
-            case 10: isLaser = true; StartCoroutine(RotationLaserAttack(3,-25f,10,1,level!=5?5:4,level!=5?36:45,0));burstMax=1;return 2f;//激光大风车
+            case 1: isLaser = false; SingleAttack(InitInstanceData.BossBulletConfig(1));burstMax=10;audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot1")); return .1f;//伤害、弹速均一般的短连发攻击
+            case 2: isLaser = false; SingleAttack(InitInstanceData.BossBulletConfig(2));audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/283")); return .5f;//射速较快且弹速快，伤害一般的攻击
+            case 3: isLaser = false; SingleAttack(InitInstanceData.BossBulletConfig(3));audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/510")); return 2f;//射速和弹速较慢，伤害较大的攻击
+            case 4: isLaser = false; ScatterAttack(InitInstanceData.BossBulletConfig(4),8,7.5f,0);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/406")); return 2.5f;//射速较慢，伤害一般，弹速些微慢的八发子弹扇形攻击
+            case 5: isLaser = false; ScatterAttack(InitInstanceData.BossBulletConfig(5),50,7.2f,0);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/GunShot2")); return 3f;//射速很慢，伤害一般，弹速较慢的单词全屏广域攻击
+            case 6: isLaser = false; SingleAttack(InitInstanceData.BossBulletConfig(6));burstMax=50;audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot2")); return .1f;//射速极快、弹速较快，伤害与弹速一般的自机连续攻击
+            case 7: isLaser = false; StartCoroutine(ContinuousScatterAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f, 10)); return 6f; // 射速很快，伤害一般，弹速较慢的持续全屏广域攻击(波粒)
+            case 8: isLaser = true; LaserAttack(InitInstanceData.BossLaserConfig(1),.8f,.5f,8,15,1);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot2"));return 1f;//散射激光
+            case 9: isLaser = true; LaserAttack(InitInstanceData.BossLaserConfig(2),.4f,.4f,1,10,5f);audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot1"));burstMax=20;return .15f;//快速的激光自机狙
+            case 10: isLaser = true; StartCoroutine(RotationLaserAttack(InitInstanceData.BossLaserConfig(3),10,level!=5?5:4,level!=5?36:45,0));burstMax=1;return 2f;//激光大风车
         }
         return 1f;
     }
 
     float RandomAttack(int i){
         switch(i){
-            case 1: isLaser = false; SingleAttack(Random.Range(1,3),Random.Range(2.5f,9f),colors[Random.Range(0,colors.Length)],Random.Range(2.5f,6),Random.Range(0,2)>0?true:false);burstMax=Random.Range(5,10); return Random.Range(0.1f,.8f);
-            case 2: isLaser = false; StartCoroutine(ContinuousScatterAttack(Random.Range(1,3),Random.Range(2.5f,5.5f), colors[Random.Range(0,colors.Length)], Random.Range(0.8f,2), Random.Range(20,40), Random.Range(5,20), Random.Range(.5f,1f), Random.Range(3,7))); return Random.Range(1.1f,3.2f);
-            case 3: isLaser = true; LaserAttack(Random.Range(1,3),Random.Range(.3f,.9f),Random.Range(.4f,1f),Random.Range(.4f,.8f),Random.Range(1,8),Random.Range(8,14),5);burstMax=Random.Range(1,8);return Random.Range(.4f,1f);
+            case 1: isLaser = false; SingleAttack(new BulletConfig(BulletType.CircleBullet,Random.Range(1,3),Random.Range(25f,90f),Random.Range(0,2)>0?ObstacleMode.None:Random.Range(0,2)>0?ObstacleMode.SingleUse:ObstacleMode.Persistent,Random.Range(2.5f,6),colors[Random.Range(0,colors.Length)]));burstMax=Random.Range(5,10); return Random.Range(0.1f,.8f);
+            case 2: isLaser = false; StartCoroutine(ContinuousScatterAttack(new BulletConfig(BulletType.SquareBullet,Random.Range(10,30),Random.Range(2.5f,5.5f),Random.Range(0,2)>0?ObstacleMode.None:Random.Range(0,2)>0?ObstacleMode.SingleUse:ObstacleMode.Persistent,Random.Range(0.8f,2),colors[Random.Range(0,colors.Length)]), Random.Range(20,40), Random.Range(5,20), Random.Range(.5f,1f), Random.Range(3,7))); return Random.Range(1.1f,3.2f);
+            case 3: isLaser = true; LaserAttack(new LaserConfig(LaserType.NormalLaser,Random.Range(1,3),Random.Range(4f,8f),0),Random.Range(.3f,.9f),Random.Range(.4f,1f),Random.Range(1,8),Random.Range(8,14),5);burstMax=Random.Range(1,8);return Random.Range(.4f,1f);
         }
         return 1f;
     }
 
-    void SingleAttack(int damage,float bulletSpeed,Color color,float size,bool isObstacle){//自机狙,发射单个子弹,伤害和速度由参数决定
-        if(playerTransform==null)return;
+    void SingleAttack(BulletConfig cfg){//自机狙,发射单个子弹,伤害和速度由参数决定
         float angle=Vector3.SignedAngle(Vector3.up,GetAttackDirection(),Vector3.forward);
         GameObject bullet=Instantiate(bulletPrefabs,transform.position,Quaternion.Euler(0,0,angle));
-        bullet.GetComponent<Bullet>().bulletSpeed=bulletSpeed;
-        bullet.GetComponent<Bullet>().damage=damage;
-        bullet.GetComponent<Bullet>().isObstacle=isObstacle;
-        bullet.GetComponent<SpriteRenderer>().color=color;
-        bullet.transform.localScale=new Vector3(bullet.transform.localScale.x*size,bullet.transform.localScale.y*size,bullet.transform.localScale.z);
-        Destroy(bullet,3f);
+        bullet.GetComponent<Bullet>().Init(cfg,Faction.Boss);
+        Destroy(bullet,4f);
     }
-    void ScatterAttack(int damage, float bulletSpeed, Color color, float size, int bulletCount, float spreadAngle, float baseAngle){
-        if (playerTransform == null) return;
+    void ScatterAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float baseAngle){
         //case 非4/5的通用枪声
         if(bulletCount<=40&&bulletCount>=20)audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/GunShot1"));
 
         for (int i = 0; i < bulletCount; i++){
             float angleOffset = (i - bulletCount / 2.0f) * spreadAngle;
             float angle = Vector3.SignedAngle(Vector3.up, GetAttackDirection(), Vector3.forward) + angleOffset + baseAngle;
-            GameObject bullet = Instantiate(bulletPrefabs, transform.position, Quaternion.Euler(0, 0, angle));
-            bullet.GetComponent<Bullet>().bulletSpeed = bulletSpeed;
-            bullet.GetComponent<Bullet>().damage = damage;
-            bullet.GetComponent<SpriteRenderer>().color = color;
-            bullet.transform.localScale = new Vector3(bullet.transform.localScale.x * size, bullet.transform.localScale.y * size, bullet.transform.localScale.z);
-            Destroy(bullet, 3f);
+            GameObject bullet=Instantiate(bulletPrefabs,transform.position,Quaternion.Euler(0,0,angle));
+            bullet.GetComponent<Bullet>().Init(cfg,Faction.Boss);
+            Destroy(bullet, 4f);
         }
     }
-    IEnumerator ContinuousScatterAttack(int damage, float bulletSpeed, Color color, float size, int bulletCount, float spreadAngle, float interval, int shots){
+    IEnumerator ContinuousScatterAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float interval, int shots){
         for (int j = 0; j < shots; j++){
-            float baseAngle = (j * 8f) % 360; // 每次射击角度变化8度
+            float baseAngle = j * 8f % 360; // 每次射击角度变化8度
             speed=.8f;//射击时减速
-            ScatterAttack(damage, bulletSpeed, color, size, bulletCount, spreadAngle, baseAngle);
+            ScatterAttack(cfg, bulletCount, spreadAngle, baseAngle);
             yield return new WaitForSeconds(interval);
         }
         speed=tempSpeed;
     }
-    void LaserAttack(int damage,float preLaserDelay,float duration, float width, int laserCount, float spreadAngle, float baseAngle){
-        if (playerTransform == null) return;
+    void LaserAttack(LaserConfig cfg,float preLaserDelay,float duration,  int laserCount, float spreadAngle, float baseAngle){
 
         for (int i = 0; i < laserCount; i++){
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
             float angle = Vector3.SignedAngle(Vector3.up, GetAttackDirection(), Vector3.forward) + angleOffset + baseAngle;
-            StartCoroutine(LaserAttackProcess(damage, duration,preLaserDelay, width,angle));
+            StartCoroutine(LaserAttackProcess(cfg, duration,preLaserDelay,angle));
         }
     }
     
-    IEnumerator LaserAttackProcess(int damage,float duration,float preLaserDelay, float width,float angle){
+    IEnumerator LaserAttackProcess(LaserConfig cfg,float duration,float preLaserDelay, float angle){
         GameObject preLaser = Instantiate(preLaserPrefabs, transform.position, Quaternion.Euler(0, 0, angle));
+        preLaser.GetComponent<Laser>().Init(cfg,Faction.Boss,true);
         yield return new WaitForSeconds(preLaserDelay);
         Destroy(preLaser);
         GameObject laser = Instantiate(laserPrefabs, transform.position, Quaternion.Euler(0, 0, angle));
-        laser.GetComponent<Laser>().damage = damage;
-        laser.GetComponent<Laser>().width = width;
+        laser.GetComponent<Laser>().Init(cfg,Faction.Boss,false);
         yield return new WaitForSeconds(duration);
         Destroy(laser);
     }
     //占位，暂未实现
-    IEnumerator LaserChangeWidthProcess(GameObject laser,float from,float to,float duration,bool isBegin){
+    IEnumerator LaserChangeWidthProcess(LaserConfig cfg,float from,float to,float duration,bool isBegin){
         if(isBegin){
         }
         yield break;
     }
 
-    IEnumerator RotationLaserAttack(int damage,float rotateSpeed,float duration, float width,int laserCount, float spreadAngle, float baseAngle){
-        if (playerTransform == null) yield break; 
+    IEnumerator RotationLaserAttack(LaserConfig cfg,float duration, int laserCount, float spreadAngle, float baseAngle){
         gameObject.transform.position=new Vector3(0,0,-2);//将Boss移动到屏幕中心，避免激光旋转时偏离屏幕
         Vector2 direction = GetAttackDirection();
         GameObject[] Lasers=new GameObject[laserCount];
@@ -240,6 +234,7 @@ public class Boss : MonoBehaviour{
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
             float angle = Vector3.SignedAngle(Vector3.up, direction, Vector3.forward) + angleOffset + baseAngle;
             GameObject laser = Instantiate(rotatePreLaserPrefabs, transform.position, Quaternion.Euler(0, 0, angle));
+            laser.GetComponent<Laser>().Init(cfg,Faction.Boss,false);
             Lasers[i]=laser;
         }
         yield return new WaitForSeconds(1);
@@ -251,9 +246,7 @@ public class Boss : MonoBehaviour{
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
             float angle = Vector3.SignedAngle(Vector3.up, direction, Vector3.forward) + angleOffset + baseAngle;
             GameObject laser = Instantiate(rotateLaserPrefabs, transform.position, Quaternion.Euler(0, 0, angle));
-            laser.GetComponent<Laser>().damage = damage;
-            laser.GetComponent<Laser>().width = width;
-            laser.GetComponent<Laser>().rotateSpeed = rotateSpeed;
+            laser.GetComponent<Laser>().Init(cfg,Faction.Boss,true);
             Lasers[i]=laser;
         }
         yield return new WaitForSeconds(duration);

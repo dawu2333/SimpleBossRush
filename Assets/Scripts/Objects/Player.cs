@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour{
     [SerializeField] private GameObject bulletPrefabs;
@@ -63,25 +62,20 @@ public class Player : MonoBehaviour{
     }
 
     void Shoot(){
-        Vector3 mousePosition=Input.mousePosition;//鼠标的屏幕所在位置
-        Vector2 mouseWorldPosition=mainCamera.ScreenToWorldPoint(mousePosition);//转换为世界坐标
-        Vector2 gameObjectPosition=transform.position;//获取游戏物体的世界坐标
-
-        Vector2 direction=(mouseWorldPosition-gameObjectPosition).normalized;//鼠标射击方向向量
-        float angle=Vector3.SignedAngle(Vector3.up,direction,Vector3.forward);
-
+        float angle=Vector3.SignedAngle(Vector3.up,GetAttackDirection(),Vector3.forward);
         GameObject bullet=Instantiate(bulletPrefabs,transform.position,Quaternion.Euler(0,0,angle));
+        bullet.GetComponent<Bullet>().Init(InitInstanceData.PlayerBulletConfig(),Faction.Player);
 
         Destroy(bullet,3f);
     }
     void OnTriggerEnter2D(Collider2D other) {
-        if(other.gameObject.tag=="Boss"&&canAffected){//如果碰到Boss，直接趋势
-            PlayerDie();
-        }else if(other.gameObject.tag=="BossBullet"&&canAffected){//如果碰到子弹，减少伤害值点生命值
-            UpdateHp(other.GetComponent<Bullet>().damage);
+        if(other.gameObject.tag=="Boss"&&canAffected){PlayerDie();return;}
+        if(other.TryGetComponent(out Bullet otherBullet) && otherBullet.Faction == Faction.Boss){
+            UpdateHp(otherBullet.Damage);
             Destroy(other.gameObject);
-        }else if((other.gameObject.tag=="Laser"||other.gameObject.tag=="RotateLaser")&&canAffected){//如果碰到激光，减少3点生命值
-            UpdateHp(other.GetComponentInParent<Laser>().damage);
+        }
+        if((other.gameObject.tag=="Laser"||other.gameObject.tag=="RotateLaser")&&canAffected){//如果碰到激光，减少3点生命值
+            UpdateHp(other.GetComponentInParent<Laser>().Damage);
         }
     }
     void OnTriggerStay2D(Collider2D collision){
@@ -112,10 +106,16 @@ public class Player : MonoBehaviour{
 
     void StartGameCanAffected(){canAffected=true;}
     void PlayerDie(){
-    if(isDead) return;
-    isDead=true;
-    GameControl.Instance?.PlayerDie();
-    Destroy(gameObject);
-}
+        if(isDead) return;
+        isDead=true;
+        GameControl.Instance?.PlayerDie();
+        Destroy(gameObject);
+    }
+    Vector2 GetAttackDirection(){
+        Vector3 mousePosition=Input.mousePosition;//鼠标的屏幕所在位置
+        Vector2 mouseWorldPosition=mainCamera.ScreenToWorldPoint(mousePosition);//转换为世界坐标
+        Vector2 gameObjectPosition=transform.position;//获取游戏物体的世界坐标
+        return (mouseWorldPosition-gameObjectPosition).normalized;
+    }
 
 }

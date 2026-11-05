@@ -171,6 +171,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a428be250a3dde44b85b61a8a5d41502, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damage: 1
-  bulletSpeed: 3
-  isObstacle: 0
