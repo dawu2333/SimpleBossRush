@@ -23,6 +23,7 @@ public class PageControl : MonoBehaviour{
 
     void Awake(){
         isStartMenu=SceneManager.GetActiveScene().name=="StartMenu";
+        if(isStartMenu)BaseInfo.Reset();//回主页重置属性
         isLevelChoice=SceneManager.GetActiveScene().name=="LevelChoice";
         isDebugScene=SceneManager.GetActiveScene().name=="DebugScene";
         isEndScene=SceneManager.GetActiveScene().name=="EndScene";
@@ -33,21 +34,17 @@ public class PageControl : MonoBehaviour{
         if(!isEndScene)return;
         EnterEndScene();
     }
-    public void StartGame(){
+    public void StartGame(){//开始界面、调试界面独有
         if(!isStartMenu&&!isDebugScene)return;
         if(isStartMenu){SceneManager.LoadScene("LevelChoice");return;}
 
         //DebugScene
-        int PlayerHp = int.TryParse(PlayerHpInput.text, out int php) && php > 0 ? php : 10;
-        int BossHp = int.TryParse(BossHpInput.text, out int bhp) && bhp > 0 ? bhp : 200;
-        int selectedLevel=LevelChoice.value+1;
-        selectedDifficulty=DifficultyChoice.options[DifficultyChoice.value].text;
-
-        PlayerPrefs.SetInt("Level",selectedLevel);
-        PlayerPrefs.SetString("Difficulty",selectedDifficulty);
-        PlayerPrefs.SetInt("Affected",0);
-        PlayerPrefs.SetInt("PlayerHP",PlayerHp);
-        PlayerPrefs.SetInt("BossHP",BossHp);
+        BaseInfo.IsDebug=true;
+        BaseInfo.Level=LevelChoice.value+1;
+        BaseInfo.Difficulty=DifficultyChoice.options[DifficultyChoice.value].text;
+        BaseInfo.PlayerHP=int.TryParse(PlayerHpInput.text, out int php) && php > 0 ? php : 10;
+        BaseInfo.BossHP = int.TryParse(BossHpInput.text, out int bhp) && bhp > 0 ? bhp : 200;
+        BaseInfo.Affected=0;
         
         SceneManager.LoadScene("MainScene");
     }
@@ -55,14 +52,15 @@ public class PageControl : MonoBehaviour{
         if(level<1 || level>=LevelData.levels.Length) level=1;
         selectedDifficulty=DifficultyChoice.options[DifficultyChoice.value].text;
         
-        PlayerPrefs.SetInt("Level",level);
-        PlayerPrefs.SetInt("Affected",0);
-        PlayerPrefs.SetString("Difficulty",selectedDifficulty);
+        BaseInfo.IsDebug = false;  
+        BaseInfo.Level=level;
+        BaseInfo.Difficulty=selectedDifficulty;
+        BaseInfo.Affected=0;
 
         SceneManager.LoadScene("MainScene");
     }
     public void Retry(){
-        PlayerPrefs.SetInt("Affected",0);
+        BaseInfo.Affected=0;
         SceneManager.LoadScene("MainScene");
     }
     public void Return(){
@@ -75,13 +73,13 @@ public class PageControl : MonoBehaviour{
     public void Back(){SceneManager.LoadScene("StartMenu");}
     public void EnterDebug(){SceneManager.LoadScene("DebugScene");}
     public void EnterEndScene(){
-        bool isWin=PlayerPrefs.GetInt("IsWin")==1;
+        bool isWin=BaseInfo.IsWin;
         audioSource=GetComponent<AudioSource>();
-        if(!isWin){
+        if(!isWin&&audioSource != null){
             AffectedNumberArea.SetActive(false);
             audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Lose"));
         }else{
-            AffectedNumberText.text=PlayerPrefs.GetInt("Affected").ToString();
+            AffectedNumberText.text=BaseInfo.Affected.ToString();
             audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Win"));
         }
         Title.text=isWin?"You Win!":"You Lose!";

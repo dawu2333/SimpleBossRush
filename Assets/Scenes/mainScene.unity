@@ -279,10 +279,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bulletPrefabs:
-  - bulletType: 0
-    prefab: {fileID: 2947137828887303428, guid: ebdf87f61f641844b81b92623c46013d, type: 3}
-  - bulletType: 1
-    prefab: {fileID: 7695200875543056793, guid: 50c18b6a0ee84a8498e3cc2992533f1c, type: 3}
+  - shape: 0
+    prefab: {fileID: 8343027400380246929, guid: ebdf87f61f641844b81b92623c46013d, type: 3}
+    prewarm: 400
+  - shape: 1
+    prefab: {fileID: 8292356963570877026, guid: 50c18b6a0ee84a8498e3cc2992533f1c, type: 3}
+    prewarm: 20
 --- !u!1 &898977619
 GameObject:
   m_ObjectHideFlags: 0

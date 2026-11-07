@@ -1,3 +1,4 @@
+//激光属性配置
 public struct LaserConfig{
     public LaserType type;
     public int damage;
