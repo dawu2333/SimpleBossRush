@@ -45,10 +45,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9baf67b0e2a8f9e49a44b0a06fc6131f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damage: 0
-  width: 0.9
-  rotateSpeed: 0
-  laserType: 0
 --- !u!1 &7536606296535879339
 GameObject:
   m_ObjectHideFlags: 0

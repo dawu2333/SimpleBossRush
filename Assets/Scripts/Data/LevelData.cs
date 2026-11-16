@@ -1,5 +1,3 @@
-using Unity.Mathematics;
-
 public static class LevelData{
     public class Level{
         public int playerHP, bossHP,bossNum;

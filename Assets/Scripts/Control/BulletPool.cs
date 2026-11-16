@@ -5,7 +5,7 @@ using UnityEngine;
 public struct BulletPrefabs{
     public BulletShape shape;
     public Bullet prefab;
-    public int prewarm;
+    public int prewarmNum;//预热数量
 }
 public class BulletPool: MonoBehaviour{
     
@@ -20,13 +20,18 @@ public class BulletPool: MonoBehaviour{
     [SerializeField] private BulletPrefabs[] bulletPrefabs;
 
     void Awake(){
-        if(Instance==null)Instance=this;
+        //if(Instance==null)Instance=this;
+        if (Instance != null && Instance != this) {
+            enabled=false;//出现第二个实例，停用自己
+            return;
+        }
+        Instance = this;
         bulletMap=new Dictionary<BulletShape, Bullet>();
         pools=new Dictionary<BulletShape, Queue<Bullet>>();
         foreach (var prefabs in bulletPrefabs){
             bulletMap[prefabs.shape]=prefabs.prefab;
-            pools[prefabs.shape]=new Queue<Bullet>();//初始化四个池
-            for (int i = 0; i < prefabs.prewarm; i++) {//预热四个池
+            pools[prefabs.shape]=new Queue<Bullet>();//初始化预制体个数的池
+            for (int i = 0; i < prefabs.prewarmNum; i++) {//预热
                 Bullet bullet=Instantiate(bulletMap[prefabs.shape],transform);
                 bullet.gameObject.SetActive(false);
                 pools[prefabs.shape].Enqueue(bullet);
@@ -54,7 +59,7 @@ public class BulletPool: MonoBehaviour{
     public void ReCycle(Bullet bullet){
         if(!pools.TryGetValue(bullet.Shape, out var queue))return;//若是未激活子弹直接跳过，防止重复回收
         bullet.gameObject.SetActive(false);
-        if (queue.Count > MaxPoolSize) {
+        if (queue.Count > MaxPoolSize) {//数量大于最大池大小，直接销毁
             Destroy(bullet.gameObject);
         }else {
             queue.Enqueue(bullet);
@@ -75,7 +80,7 @@ public class BulletPool: MonoBehaviour{
     public void OnGUI() {
         GUIStyle style = new GUIStyle {fontSize = 30,};
         style.normal.textColor = Color.white; 
-        GUI.Label(new Rect(20, 20, 500, 50), $"当前调用池实例{deNumber}次、创建实例{intNumber}次、回收{recycleNumber}次、池内实例数为{GetTotalPoolCount()}个", style);
+        GUI.Label(new Rect(20, 20, 500, 50), $"当前子弹调用池实例{deNumber}次、创建实例{intNumber}次、回收{recycleNumber}次、池内实例数为{GetTotalPoolCount()}个", style);
     }
     #endif
 

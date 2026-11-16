@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 379843498}
   - component: {fileID: 379843496}
   - component: {fileID: 379843499}
+  - component: {fileID: 379843500}
   m_Layer: 0
   m_Name: GameControl
   m_TagString: Untagged
@@ -281,10 +282,35 @@ MonoBehaviour:
   bulletPrefabs:
   - shape: 0
     prefab: {fileID: 8343027400380246929, guid: ebdf87f61f641844b81b92623c46013d, type: 3}
-    prewarm: 400
+    prewarmNum: 500
   - shape: 1
     prefab: {fileID: 8292356963570877026, guid: 50c18b6a0ee84a8498e3cc2992533f1c, type: 3}
+    prewarmNum: 30
+--- !u!114 &379843500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 379843495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 624ddeb14622cee4d82efd5924d86558, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  laserPrefabs:
+  - visual: 1
+    prefab: {fileID: 4041018476469758866, guid: e3455276e4916cd40bd5878e896fa12b, type: 3}
     prewarm: 20
+  - visual: 0
+    prefab: {fileID: 7101693228743580612, guid: 49f609963649a154590f85f4bcd2bbfe, type: 3}
+    prewarm: 20
+  - visual: 2
+    prefab: {fileID: 6657619841216627317, guid: 09fce5abaa22b1d47bb5ba575e37471f, type: 3}
+    prewarm: 10
+  - visual: 3
+    prefab: {fileID: 3638239199094759253, guid: 394555d4c26f52044b51d7d7cb24e5ae, type: 3}
+    prewarm: 10
 --- !u!1 &898977619
 GameObject:
   m_ObjectHideFlags: 0

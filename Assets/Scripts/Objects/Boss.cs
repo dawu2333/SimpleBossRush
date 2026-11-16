@@ -5,11 +5,6 @@ using Random = UnityEngine.Random;
 public class Boss : MonoBehaviour{
     static readonly Color[] colors={Color.red,Color.blue,Color.cyan,Color.black,Color.green,Color.yellow};
     [SerializeField] private float speed;
-    [SerializeField] private GameObject bulletPrefabs;
-    [SerializeField] private GameObject laserPrefabs;
-    [SerializeField] private GameObject preLaserPrefabs;
-    [SerializeField] private GameObject rotateLaserPrefabs;
-    [SerializeField] private GameObject rotatePreLaserPrefabs;
     [SerializeField] private Transform hpbar;
     private int hp;
     private int MaxHP;
@@ -20,7 +15,7 @@ public class Boss : MonoBehaviour{
     private string difficulty;
     private readonly int MaxMoveStep = 10;
     private float attack_time,current_time,tempSpeed,frequency=0;//攻击间隔、冷却时间、临时速度、攻击频率权重
-    private bool isLaser=false,isDead=false;
+    private bool isLaser=false,isDead=false,isPinwheel=false;
     private int moveTimer,moveDir,lastAttack;//移动增量计数器、移动方向标识、上一次攻击序号
     private Transform playerTransform;
     private AudioSource audioSource;
@@ -32,7 +27,7 @@ public class Boss : MonoBehaviour{
     #if UNITY_EDITOR
         void DebugAttack(int i){
         BossAttackChoice(i);
-        ApplyAttackSpeed();          // ← 手动路径也要走一遍
+        ApplyAttackSpeed();      
     }
     void HandBossAttack(){
         if(Input.GetKeyDown(KeyCode.Alpha1)){DebugAttack(1);}
@@ -70,15 +65,20 @@ public class Boss : MonoBehaviour{
         if(other.TryGetComponent(out Bullet bullet) && bullet.Faction == Faction.Player) {
             UpdateHp(bullet.Damage);
             StartCoroutine(Hitted());
-        }else if(other.TryGetComponent(out Laser laser) && laser.Faction == Faction.Player) {
-            UpdateHp(laser.Damage);
-            StartCoroutine(Hitted());
+        }else {
+            Laser laser=other.GetComponentInParent<Laser>();
+            if(laser==null) return;
+            if(laser.Faction == Faction.Player) {
+                UpdateHp(laser.Damage);
+                StartCoroutine(Hitted());
+            }
         }
     }
     
+    //
     void ApplyAttackSpeed(){
-    if(isLaser) speed=0;
-    else speed=tempSpeed;
+        if(isLaser) speed=0;
+        else speed=tempSpeed;
     }
 
     void InitiateData(){
@@ -91,7 +91,7 @@ public class Boss : MonoBehaviour{
         playerTransform=GameObject.FindWithTag("Player")?.transform;
         if(playerTransform==null){
             Debug.LogError("Player not found!");
-            GameControl.Instance?.BossDie();
+            GameControl.Instance?.BossDie(level);
             Destroy(gameObject);return;
         }
         
@@ -131,7 +131,8 @@ public class Boss : MonoBehaviour{
         hpbar.localScale=new Vector3(scaleXValue,hpbar.localScale.y,hpbar.localScale.z);
         if(hp<=0&&!isDead){
             isDead=true;
-            GameControl.Instance?.BossDie();Destroy(gameObject);
+            GameControl.Instance?.BossDie(level);
+            Destroy(gameObject);
         }
     }
     void BossAttackAI() {
@@ -150,9 +151,9 @@ public class Boss : MonoBehaviour{
             currentAttack = GetNewAttack();
             burstCount = 0; current_time = level!=5?attack_time / 2:0;
         }
-
-}
+    }
     int GetNewAttack() {
+        if(BossAttackList.Length==1)return 0;
         int newAttack;
         do {
             newAttack = difficulty!="Extreme"?BossAttackList[Random.Range(0, BossAttackList.Length)]:ExtremeAttackList[Random.Range(0, ExtremeAttackList.Length)];
@@ -267,6 +268,7 @@ public class Boss : MonoBehaviour{
 
     void SingleAttack(BulletConfig cfg){//自机狙,发射单个子弹,伤害和速度由参数决定
         Bullet bullet=BulletPool.Instance.Get(cfg.shape,transform.position,GetAttackQuaternion());
+        if(bullet==null){Debug.LogError($"{gameObject.tag}未获取到子弹");return;};
         bullet.Init(cfg,Faction.Boss);
     }
     void ScatterAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float baseAngle){
@@ -276,6 +278,7 @@ public class Boss : MonoBehaviour{
         for (int i = 0; i < bulletCount; i++){
             float angleOffset = (i - bulletCount / 2.0f) * spreadAngle;
             Bullet bullet=BulletPool.Instance.Get(cfg.shape,transform.position,GetAttackQuaternion(angleOffset,baseAngle));
+            if(bullet==null){Debug.LogError($"{gameObject.tag}未获取到子弹");return;};
             bullet.Init(cfg,Faction.Boss);
         }
     }
@@ -286,7 +289,7 @@ public class Boss : MonoBehaviour{
             ScatterAttack(cfg, bulletCount, spreadAngle, baseAngle);
             yield return new WaitForSeconds(interval);
         }
-        speed=tempSpeed;
+        ApplyAttackSpeed();
     }
     void LaserAttack(LaserConfig cfg,float preLaserDelay,float duration,  int laserCount, float spreadAngle, float baseAngle){
 
@@ -298,10 +301,10 @@ public class Boss : MonoBehaviour{
     
     IEnumerator LaserAttackProcess(LaserConfig cfg,float duration,float preLaserDelay, Quaternion rotation){
         for (int i = 0; i < 2; i++) {
-            GameObject laser = Instantiate(i==0?preLaserPrefabs:laserPrefabs, transform.position, rotation,transform);
-            laser.GetComponent<Laser>().Init(cfg,Faction.Boss,true);
+            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,i==0,transform.position,rotation);
+            laser.Init(cfg,Faction.Boss,i==0);
             yield return new WaitForSeconds(i==0?preLaserDelay:duration);
-            Destroy(laser);
+            laser.Despawn();
         }
 
     }
@@ -313,29 +316,31 @@ public class Boss : MonoBehaviour{
     }
 
     IEnumerator RotationLaserAttack(LaserConfig cfg,float duration, int laserCount, float spreadAngle, float baseAngle){
+        isPinwheel=true;
         gameObject.transform.position=new Vector3(0,0,-1);//将Boss移动到屏幕中心，避免激光旋转时偏离屏幕
-        GameObject[] Lasers=new GameObject[laserCount];
+        Laser[] Lasers=new Laser[laserCount];
 
         moveDir=0;
         for (int j = 0; j < 2; j++){
             for (int i = 0; i < laserCount; i++){
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
-            GameObject laser = Instantiate(j==0?rotatePreLaserPrefabs:rotateLaserPrefabs, transform.position, GetAttackQuaternion(angleOffset,baseAngle),transform);
-            laser.GetComponent<Laser>().Init(cfg,Faction.Boss, j == 0);
+            Laser laser=LaserPool.Instance.Get(LaserType.RotateLaser,j==0,transform.position,GetAttackQuaternion(angleOffset,baseAngle));
+            laser.Init(cfg,Faction.Boss,j==0);
             Lasers[i]=laser;
             }
             yield return new WaitForSeconds(j==0?1f:duration);
-            foreach(GameObject laser in Lasers){
-                Destroy(laser);
+            foreach(Laser laser in Lasers){
+                laser.Despawn();
             }
         }
+        isPinwheel=false;
     }
 
     void BossMoveAI(){
-        if(moveTimer != MaxMoveStep){
+        if(isPinwheel)return;//正在激光大风车携程，不移动
+        if(moveTimer < MaxMoveStep){
             Move(moveDir);
-        }
-        if(moveTimer > MaxMoveStep){
+        }else{
             moveDir = Random.Range(1, 9); // 方向范围从1到8
             moveTimer = 0;
         }

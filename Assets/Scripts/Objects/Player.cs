@@ -14,6 +14,8 @@ public class Player : MonoBehaviour{
     private Camera mainCamera;
     void Awake() {
         mainCamera=Camera.main;
+        var rb = GetComponent<Rigidbody2D>();
+        if(rb != null) rb.sleepMode = RigidbodySleepMode2D.NeverSleep;//唤醒刚体，防止吃不到伤害
     }
     void Start(){
         Invoke(nameof(StartGameCanAffected), 2);
@@ -34,6 +36,8 @@ public class Player : MonoBehaviour{
     }
     
     void InitiateData(){
+        if(speed==0)speed=10;
+        if(attack_time==0)attack_time=0.2f;
         var lv = LevelData.levels[BaseInfo.Level];
         hp = BaseInfo.IsDebug?BaseInfo.PlayerHP:lv.playerHP;
         MaxHP=hp;
@@ -57,21 +61,29 @@ public class Player : MonoBehaviour{
     }
     void Shoot(){
         Bullet bullet=BulletPool.Instance.Get(InitInstanceData.PlayerBulletConfig().shape,transform.position,GetAttackQuaternion());
+        if(bullet==null){Debug.LogError($"{gameObject.tag}未获取到子弹");return;};
         bullet.Init(InitInstanceData.PlayerBulletConfig(),Faction.Player);
     }
-    void OnTriggerEnter2D(Collider2D other) {
+    void OnTriggerEnter2D(Collider2D collision) {
         if(!canAffected)return;
-        if(other.gameObject.tag=="Boss"){PlayerDie();return;}
-        if(other.TryGetComponent(out Bullet otherBullet) && otherBullet.Faction == Faction.Boss){
+        if(collision.gameObject.tag=="Boss"){PlayerDie();return;}
+        if(collision.TryGetComponent(out Bullet otherBullet) && otherBullet.Faction == Faction.Boss){
             UpdateHp(otherBullet.Damage);
-        }else if(other.TryGetComponent(out Laser laser) && laser.Faction == Faction.Boss){//如果碰到激光，减少3点生命值
-            UpdateHp(laser.Damage);
         }
     }
     void OnTriggerStay2D(Collider2D collision){
-        if(collision.gameObject.tag=="Boss"&&canAffected){PlayerDie();}
+        if(!canAffected)return;
+        if(collision.gameObject.tag=="Boss"&&canAffected){
+            PlayerDie();
+            return;
+        }
+        Laser laser=collision.GetComponentInParent<Laser>();
+        if(laser!=null&&laser.Faction == Faction.Boss) {
+            UpdateHp(laser.Damage);
+        }
     }
     void UpdateHp(int damage){
+        if(damage<=0)return;//过滤小于等于0的伤害
         StartCoroutine(AffectedProcess());
         BaseInfo.Affected++;
         hp-=damage;
@@ -87,9 +99,9 @@ public class Player : MonoBehaviour{
         canAffected=false;
         for(int i=0;i<2;i++){
             GetComponent<SpriteRenderer>().color = new Color32(202,49,108,0);
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.15f);
             GetComponent<SpriteRenderer>().color = new Color32(202,49,108,255);
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.15f);
         }
         canAffected=true;
     }

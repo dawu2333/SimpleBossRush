@@ -8,7 +8,7 @@ public class GameControl : MonoBehaviour{
     private AudioSource audioSource;
     private AudioClip BGM1,BGM2;
     private bool isEscape;
-    private int bossNum=0;
+    private int bossNum=0,EndLevel=5;
     const float Spacing = 14f;//多boss间隔
     public static float boundX=15.4f,boundY=7.4f;//游戏边界
     void Awake() {
@@ -33,9 +33,9 @@ public class GameControl : MonoBehaviour{
         var lv = LevelData.levels[BaseInfo.Level];
         bossNum=lv.bossNum;
         Time.timeScale=1;
-        audioSource.clip=BaseInfo.Level>=3?BGM1:BGM2;
-        audioSource.Play();
+        audioSource.clip=BaseInfo.Level>=3?BGM1:BGM2;   
         audioSource.volume=0.1f;//音量百分比
+        audioSource.Play();
 
         float startX = -(lv.bossNum - 1) * Spacing / 2f;
         Instantiate(playerPrefabs,new Vector3(0,-10,-1),Quaternion.identity);
@@ -43,16 +43,17 @@ public class GameControl : MonoBehaviour{
             Instantiate(bossPrefabs, new Vector3(startX + i*Spacing, 0, -1), Quaternion.identity);
         }
     }
-    public void BossDie(){
+    public void BossDie(int level){
         bossNum--;
-        if(bossNum==0){
+        if(bossNum<=0){
+            if(level==EndLevel)PlayerPrefsControl.IsPass(true);//尾关通关，设定通关标识为true
             BaseInfo.IsWin=true;
-            SceneManager.LoadScene("EndScene");
+            SceneManager.LoadScene("End");
         }
     }
     public void PlayerDie(){
         BaseInfo.IsWin=false;
-        SceneManager.LoadScene("EndScene");
+        SceneManager.LoadScene("End");
     }
     void PauseGame(){
         if(Input.GetKeyDown(KeyCode.Escape)){

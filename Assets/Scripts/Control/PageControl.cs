@@ -4,41 +4,49 @@ using UnityEngine.SceneManagement;
 
 public class PageControl : MonoBehaviour{
 
-    //DebugScene、StartMenu、LevelChoice
-    
+    //Debug、StartMenu、LevelChoice
     [SerializeField] private TMP_InputField BossHpInput;
     [SerializeField] private TMP_InputField PlayerHpInput;
     [SerializeField] private TMP_Dropdown DifficultyChoice;
     [SerializeField] private TMP_Dropdown LevelChoice;
+    [SerializeField] private RectTransform StartMenufunctionArea;
     
-    private bool isStartMenu,isLevelChoice,isDebugScene,isEndScene;
-    private string[] difficulty = {"Easy", "Normal", "Hard","Extreme"};
+    private bool isStartMenu,isLevelChoice,isDebug,isEnd;
+    private string[] difficulty = {"Easy", "Normal", "Hard"};
     private string selectedDifficulty;
 
-    //EndScene
+    //End
     [SerializeField] private TMP_Text AffectedNumberText;
     [SerializeField] private GameObject AffectedNumberArea;
     [SerializeField] private TMP_Text Title;
     private AudioSource audioSource;
 
     void Awake(){
+
         isStartMenu=SceneManager.GetActiveScene().name=="StartMenu";
-        if(isStartMenu)BaseInfo.Reset();//回主页重置属性
         isLevelChoice=SceneManager.GetActiveScene().name=="LevelChoice";
-        isDebugScene=SceneManager.GetActiveScene().name=="DebugScene";
-        isEndScene=SceneManager.GetActiveScene().name=="EndScene";
-        if(isDebugScene||isLevelChoice)InitDifficultyChoiceDropDown();
-        if(isDebugScene)InitLevelChoiceDropDown();
+        isDebug=SceneManager.GetActiveScene().name=="Debug";
+        isEnd=SceneManager.GetActiveScene().name=="End";
+
+        //资源缓存
+        audioSource=GetComponent<AudioSource>();
+        
+        if(isStartMenu){
+            BaseInfo.Reset();//回主页重置属性
+            GetFunctionMenuChild(1).gameObject.SetActive(PlayerPrefsControl.IsPass());
+        }
+        if(isDebug||isLevelChoice)InitDifficultyChoiceDropDown();
+        if(isDebug)InitLevelChoiceDropDown();
     }
     void Start(){
-        if(!isEndScene)return;
+        if(!isEnd)return;
         EnterEndScene();
     }
     public void StartGame(){//开始界面、调试界面独有
-        if(!isStartMenu&&!isDebugScene)return;
+        if(!isStartMenu&&!isDebug)return;
         if(isStartMenu){SceneManager.LoadScene("LevelChoice");return;}
 
-        //DebugScene
+        //Debug
         BaseInfo.IsDebug=true;
         BaseInfo.Level=LevelChoice.value+1;
         BaseInfo.Difficulty=DifficultyChoice.options[DifficultyChoice.value].text;
@@ -46,7 +54,7 @@ public class PageControl : MonoBehaviour{
         BaseInfo.BossHP = int.TryParse(BossHpInput.text, out int bhp) && bhp > 0 ? bhp : 200;
         BaseInfo.Affected=0;
         
-        SceneManager.LoadScene("MainScene");
+        SceneManager.LoadScene("Main");
     }
     public void StartGame(int level){
         if(level<1 || level>=LevelData.levels.Length) level=1;
@@ -57,43 +65,48 @@ public class PageControl : MonoBehaviour{
         BaseInfo.Difficulty=selectedDifficulty;
         BaseInfo.Affected=0;
 
-        SceneManager.LoadScene("MainScene");
+        SceneManager.LoadScene("Main");
     }
     public void Retry(){
         BaseInfo.Affected=0;
-        SceneManager.LoadScene("MainScene");
+        SceneManager.LoadScene("Main");
     }
     public void Return(){
-        if(isDebugScene)SceneManager.LoadScene("DebugScene");
+        if(isDebug)SceneManager.LoadScene("Debug");
         else SceneManager.LoadScene("StartMenu");
     }
     public void ExitGame(){
         Application.Quit();
     }
     public void Back(){SceneManager.LoadScene("StartMenu");}
-    public void EnterDebug(){SceneManager.LoadScene("DebugScene");}
+    public void EnterDebugScene(){SceneManager.LoadScene("Debug");}
     public void EnterEndScene(){
         bool isWin=BaseInfo.IsWin;
-        audioSource=GetComponent<AudioSource>();
-        if(!isWin&&audioSource != null){
+        if(!isWin){
             AffectedNumberArea.SetActive(false);
-            audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Lose"));
+            if(audioSource != null)audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Lose"));
         }else{
             AffectedNumberText.text=BaseInfo.Affected.ToString();
-            audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Win"));
+            if(audioSource != null)audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/Win"));
         }
         Title.text=isWin?"You Win!":"You Lose!";
     }
+    public void EnterWeaponChoiceScene() {SceneManager.LoadScene("WeaponChoice");}
     private void InitDifficultyChoiceDropDown(){
         DifficultyChoice.ClearOptions();
         foreach (var item in difficulty) {
             DifficultyChoice.options.Add(new TMP_Dropdown.OptionData(item));
         }
+        if(PlayerPrefsControl.IsPass())DifficultyChoice.options.Add(new TMP_Dropdown.OptionData("Extreme"));//若通关，追加极限模式
     }
     private void InitLevelChoiceDropDown(){
         LevelChoice.ClearOptions();
-        for (int i=1;i<=5;i++) {
+        for (int i=1;i<LevelData.levels.Length;i++) {
             LevelChoice.options.Add(new TMP_Dropdown.OptionData(i.ToString()));
         }
+        
+    }
+    private RectTransform GetFunctionMenuChild(int i) {
+        return (RectTransform)StartMenufunctionArea.GetChild(i);
     }
 }
