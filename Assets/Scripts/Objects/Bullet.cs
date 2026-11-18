@@ -1,23 +1,14 @@
 using UnityEngine;
 
-//子弹功能枚举：普通子弹/碎片子弹/爆炸子弹
-public enum BulletBehavior{NormalBullet,FragmentedBullet,ExplosiveBullet};
-//子弹形状枚举
-public enum BulletShape{Round,Rect,Head,Arrow}
-//实现：普通子弹
-//未实现：碎片子弹、爆炸子弹
-
-public enum Faction{ Player, Boss }//子弹阵营
-public enum ObstacleMode{None,SingleUse,Persistent}
-
 public class Bullet : MonoBehaviour{
     private BulletConfig config;
     private Faction faction;
     private Vector3 baseScale;
     private bool isDespawned=false;
-    public int Damage=>config.damage;
+    public float Damage=>config.damage;
     public BulletShape Shape=>config.shape;
     public Faction Faction=>faction;
+    public ObstacleMode ObstacleMode=>config.mode;
     void Awake(){
         baseScale=transform.localScale;
     }
@@ -29,14 +20,12 @@ public class Bullet : MonoBehaviour{
 
     
     void OnTriggerEnter2D(Collider2D other){//只负责撞到玩家/boss/bullet后的判断
-        if ((other.TryGetComponent<Boss>(out Boss _)&&faction==Faction.Player)||
-            (other.TryGetComponent<Player>(out Player _)&&faction==Faction.Boss)
-        ){//碰到非自身阵营的实体，直接回收
+        if (other.TryGetComponent(out EntityBase entity)&&entity.EntityFaction!=faction){//碰到非自身阵营的实体，直接回收
             Despawn();
             return;
         }
             
-        if(other.TryGetComponent<Bullet>(out Bullet otherBullet) && otherBullet.Faction != faction) {
+        if(other.TryGetComponent(out Bullet otherBullet) && otherBullet.Faction != faction) {
             ObstacleFunction(otherBullet);
         }
 

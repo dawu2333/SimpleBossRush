@@ -2,52 +2,28 @@ using System.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class Boss : MonoBehaviour{
-    static readonly Color[] colors={Color.red,Color.blue,Color.cyan,Color.black,Color.green,Color.yellow};
-    [SerializeField] private float speed;
-    [SerializeField] private Transform hpbar;
-    private int hp;
-    private int MaxHP;
-    private int burstCount = 0;
-    private int currentAttack;
-    private int burstMax = 3;
-    private int level;
-    private string difficulty;
-    private readonly int MaxMoveStep = 10;
+public class Boss : EntityBase{
+    private readonly Color[] colors={Color.red,Color.blue,Color.cyan,Color.black,Color.green,Color.yellow};
+    private readonly int MaxMoveStep = 10;//单次最大步移次数
+    private AudioSource audioSource;//播放元
+    private int attackCount = 0;//攻击次数
+    private int currentAttack;//当前攻击
+    private int maxAttackCount = 3;//最大攻击次数
     private float attack_time,current_time,tempSpeed,frequency=0;//攻击间隔、冷却时间、临时速度、攻击频率权重
-    private bool isLaser=false,isDead=false,isPinwheel=false;
+    private bool isLaser=false,isPinwheel=false;//是否处于激光发射/旋转激光状态中
     private int moveTimer,moveDir,lastAttack;//移动增量计数器、移动方向标识、上一次攻击序号
-    private Transform playerTransform;
-    private AudioSource audioSource;
+    private Transform playerTransform;//玩家位置
     private int[] BossAttackList;//攻击池
     private int[] BossAttackList2={1,2,3,4,5,6,8,9,10};//level 5 的额外攻击池：故意不含7，7与激光风车(10) 同时在场时弹幕过密，实测几乎无解
     private int[] ExtremeAttackList={1,2,3};//极限难度Boss的攻击池，
-    private Color color;
-
-    #if UNITY_EDITOR
-        void DebugAttack(int i){
-        BossAttackChoice(i);
-        ApplyAttackSpeed();      
-    }
-    void HandBossAttack(){
-        if(Input.GetKeyDown(KeyCode.Alpha1)){DebugAttack(1);}
-        if(Input.GetKeyDown(KeyCode.Alpha2)){DebugAttack(2);}
-        if(Input.GetKeyDown(KeyCode.Alpha3)){DebugAttack(3);}
-        if(Input.GetKeyDown(KeyCode.Alpha4)){DebugAttack(4);}
-        if(Input.GetKeyDown(KeyCode.Alpha5)){DebugAttack(5);}
-        if(Input.GetKeyDown(KeyCode.Alpha6)){DebugAttack(6);}
-        if(Input.GetKeyDown(KeyCode.Alpha7)){DebugAttack(7);}
-        if(Input.GetKeyDown(KeyCode.Alpha8)){DebugAttack(8);}
-        if(Input.GetKeyDown(KeyCode.Alpha9)){DebugAttack(9);}
-        if(Input.GetKeyDown(KeyCode.Alpha0)){DebugAttack(10);}
-    }
-    #endif
+    public override Faction EntityFaction => Faction.Boss;//阵营为Boss
 
     void Awake(){
         audioSource=GetComponent<AudioSource>();
     }
     void Start(){
         InitiateData();
+        EndInvincible();
         StartCoroutine(CountPlus());
     }
 
@@ -57,34 +33,15 @@ public class Boss : MonoBehaviour{
         BossAttackAI();
         
         #if UNITY_EDITOR
-        HandBossAttack();
+        HandBossAttack();//测试手操攻击
         #endif
     }
-
-    void OnTriggerEnter2D(Collider2D other){
-        if(other.TryGetComponent(out Bullet bullet) && bullet.Faction == Faction.Player) {
-            UpdateHp(bullet.Damage);
-            StartCoroutine(Hitted());
-        }else {
-            Laser laser=other.GetComponentInParent<Laser>();
-            if(laser==null) return;
-            if(laser.Faction == Faction.Player) {
-                UpdateHp(laser.Damage);
-                StartCoroutine(Hitted());
-            }
-        }
-    }
-    
-    //
-    void ApplyAttackSpeed(){
-        if(isLaser) speed=0;
-        else speed=tempSpeed;
-    }
-
+    //数值初始化
     void InitiateData(){
         //初始化基础数值
         level=BaseInfo.Level;
         difficulty=BaseInfo.Difficulty;
+        originColor=GetComponent<SpriteRenderer>().color;
         var lv = LevelData.levels[level];
 
         //初始获取玩家位置
@@ -116,42 +73,60 @@ public class Boss : MonoBehaviour{
         attack_time=1f;
         moveTimer=0;
         audioSource.volume=0.2f;//音量20%
-        color=GetComponent<SpriteRenderer>().color;
         moveDir = Random.Range(1, 9);
         currentAttack=GetNewAttack();
     }
 
-    void UpdateHp(int damage){
-        //1.5f是血条的长度，0.75f是血条的偏移量
-        hp-=damage;
-        float percentage=Mathf.Clamp01((float)hp/MaxHP);
-        float scaleXValue = 1.5f * percentage;
-        float posXValue = -0.75f + 0.75f * percentage;
-        hpbar.localPosition=new Vector3(posXValue,hpbar.localPosition.y,hpbar.localPosition.z);
-        hpbar.localScale=new Vector3(scaleXValue,hpbar.localScale.y,hpbar.localScale.z);
-        if(hp<=0&&!isDead){
-            isDead=true;
-            GameControl.Instance?.BossDie(level);
-            Destroy(gameObject);
+
+    //受击相关
+    //死亡钩子实现
+    protected override void OnDied() {
+        GameControl.Instance?.BossDie(level);
+    }
+    //受伤钩子实现
+    protected override void OnDamaged() {
+        StartCoroutine(AffectedProcess(true,0.025f,1));
+    }
+
+    void OnTriggerEnter2D(Collider2D collision) {
+        if(TryGetDamage(collision,out float damage,out DamageKind kind)&&kind==DamageKind.Instant){
+            UpdateHp(damage,true);
         }
     }
+    void OnTriggerStay2D(Collider2D collision){
+        if(TryGetDamage(collision,out float damage,out DamageKind kind)&&kind==DamageKind.Continuous){
+            UpdateHp(damage*Time.deltaTime,false);//每帧伤害
+        }
+    }
+
+
+    //攻击相关
+    //获取攻击目标
+    protected override bool TryGetAimPosition(out Vector2 aim) {
+        if(playerTransform==null){aim=default;return false;}
+        aim=playerTransform.position;
+        return true;
+    }
+
+    //攻击逻辑
     void BossAttackAI() {
         if(playerTransform==null)return;//找不到玩家不攻击
         current_time += Time.deltaTime;
-        if (current_time >= attack_time && burstCount < burstMax) {
+        if (current_time >= attack_time && attackCount < maxAttackCount) {
             attack_time=(difficulty!="Extreme"?BossAttackChoice(currentAttack):RandomAttack(currentAttack))*frequency;
-            if(level==5&&burstCount%2==0){//第五关每两次攻击后随机选择一次攻击方式
+            if(level==5&&attackCount%2==0){//第五关每两次攻击后随机选择一次攻击方式
                 BossAttackChoice(BossAttackList2[Random.Range(0, BossAttackList2.Length)]);
-                burstCount++;
+                attackCount++;
             }
-            burstCount++; current_time = 0;
+            attackCount++; current_time = 0;
             ApplyAttackSpeed();
-        } else if (current_time >= attack_time && burstCount >= burstMax) {
-            burstMax = Random.Range(2, 4);
+        } else if (current_time >= attack_time && attackCount >= maxAttackCount) {
+            maxAttackCount = Random.Range(2, 4);
             currentAttack = GetNewAttack();
-            burstCount = 0; current_time = level!=5?attack_time / 2:0;
+            attackCount = 0; current_time = level!=5?attack_time / 2:0;
         }
     }
+    //取得下一个攻击
     int GetNewAttack() {
         if(BossAttackList.Length==1)return 0;
         int newAttack;
@@ -162,42 +137,43 @@ public class Boss : MonoBehaviour{
         return newAttack;
     }
 
+    //攻击选择
     float BossAttackChoice(int i){
         switch(i){
             case 1: 
                 isLaser = false; 
-                SingleAttack(InitInstanceData.BossBulletConfig(1));
-                burstMax=10;
+                SingleBulletAttack(InitInstanceData.BossBulletConfig(1));
+                maxAttackCount=10;
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot1")); 
                 return .1f;//伤害、弹速均一般的短连发攻击
             case 2: 
                 isLaser = false; 
-                SingleAttack(InitInstanceData.BossBulletConfig(2));
+                SingleBulletAttack(InitInstanceData.BossBulletConfig(2));
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/283")); 
                 return .5f;//射速较快且弹速快，伤害一般的攻击
             case 3: 
                 isLaser = false; 
-                SingleAttack(InitInstanceData.BossBulletConfig(3));
+                SingleBulletAttack(InitInstanceData.BossBulletConfig(3));
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/510")); 
                 return 2f;//射速和弹速较慢，伤害较大的攻击
             case 4: 
                 isLaser = false; 
-                ScatterAttack(InitInstanceData.BossBulletConfig(4),8,7.5f,0);
+                ScatterBulletAttack(InitInstanceData.BossBulletConfig(4),8,7.5f,0);
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/406")); 
                 return 2.5f;//射速较慢，伤害一般，弹速些微慢的八发子弹扇形攻击
             case 5: 
                 isLaser = false; 
-                ScatterAttack(InitInstanceData.BossBulletConfig(5),50,7.2f,0);
+                ScatterBulletAttack(InitInstanceData.BossBulletConfig(5),50,7.2f,0);
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/GunShot2")); 
                 return 3f;//射速很慢，伤害一般，弹速较慢的单词全屏广域攻击
             case 6: 
-                isLaser = false; SingleAttack(InitInstanceData.BossBulletConfig(6));
-                burstMax=50;
+                isLaser = false; SingleBulletAttack(InitInstanceData.BossBulletConfig(6));
+                maxAttackCount=50;
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot2")); 
                 return .1f;//射速极快、弹速较快，伤害与弹速一般的自机连续攻击
             case 7: 
                 isLaser = false; 
-                StartCoroutine(ContinuousScatterAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f, 10)); 
+                StartCoroutine(SlowScatterBulletAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f, 10)); 
                 return 6f; // 射速很快，伤害一般，弹速较慢的持续全屏广域攻击(波粒)
             case 8: 
                 isLaser = true; 
@@ -208,22 +184,22 @@ public class Boss : MonoBehaviour{
                 isLaser = true; 
                 LaserAttack(InitInstanceData.BossLaserConfig(2),.4f,.4f,1,10,5f);
                 audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot1"));
-                burstMax=20;
+                maxAttackCount=20;
                 return .15f;//快速的激光自机狙
             case 10: 
                 isLaser = true; 
                 StartCoroutine(RotationLaserAttack(InitInstanceData.BossLaserConfig(3),10,level!=5?5:4,level!=5?36:45,0));
-                burstMax=1;
+                maxAttackCount=1;
                 return 2f;//激光大风车
         }
         return 1f;
     }
-
+    //随机攻击
     float RandomAttack(int i){
         switch(i){
             case 1: 
                 isLaser = false; 
-                SingleAttack(new BulletConfig(
+                SingleBulletAttack(new BulletConfig(
                     BulletBehavior.NormalBullet,
                     Random.Range(1,3),
                     Random.Range(25f,90f),
@@ -232,11 +208,11 @@ public class Boss : MonoBehaviour{
                     Random.Range(2.5f,6),
                     colors[Random.Range(0,colors.Length)],
                     BulletShape.Round));
-                burstMax=Random.Range(5,10); 
+                maxAttackCount=Random.Range(5,10); 
                 return Random.Range(0.1f,.8f);
             case 2: 
                 isLaser = false; 
-                StartCoroutine(ContinuousScatterAttack(new BulletConfig(
+                StartCoroutine(ContinuousScatterBulletAttack(new BulletConfig(
                     BulletBehavior.NormalBullet,
                     Random.Range(1,3),
                     Random.Range(25f,55f),
@@ -260,72 +236,24 @@ public class Boss : MonoBehaviour{
                     Random.Range(.4f,1f),
                     Random.Range(1,8),
                     Random.Range(8,14),5);
-                burstMax=Random.Range(1,8);
+                maxAttackCount=Random.Range(1,8);
                 return Random.Range(.4f,1f);
         }
         return 1f;
     }
 
-    void SingleAttack(BulletConfig cfg){//自机狙,发射单个子弹,伤害和速度由参数决定
-        Bullet bullet=BulletPool.Instance.Get(cfg.shape,transform.position,GetAttackQuaternion());
-        if(bullet==null){Debug.LogError($"{gameObject.tag}未获取到子弹");return;};
-        bullet.Init(cfg,Faction.Boss);
-    }
-    void ScatterAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float baseAngle){
-        //case 非4/5的通用枪声
-        if(bulletCount<=40&&bulletCount>=20)audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/GunShot1"));
-
-        for (int i = 0; i < bulletCount; i++){
-            float angleOffset = (i - bulletCount / 2.0f) * spreadAngle;
-            Bullet bullet=BulletPool.Instance.Get(cfg.shape,transform.position,GetAttackQuaternion(angleOffset,baseAngle));
-            if(bullet==null){Debug.LogError($"{gameObject.tag}未获取到子弹");return;};
-            bullet.Init(cfg,Faction.Boss);
-        }
-    }
-    IEnumerator ContinuousScatterAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float interval, int shots){
-        for (int j = 0; j < shots; j++){
-            float baseAngle = j * 8f % 360; // 每次射击角度变化8度
-            speed=.8f;//射击时减速
-            ScatterAttack(cfg, bulletCount, spreadAngle, baseAngle);
-            yield return new WaitForSeconds(interval);
-        }
-        ApplyAttackSpeed();
-    }
-    void LaserAttack(LaserConfig cfg,float preLaserDelay,float duration,  int laserCount, float spreadAngle, float baseAngle){
-
-        for (int i = 0; i < laserCount; i++){
-            float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
-            StartCoroutine(LaserAttackProcess(cfg, duration,preLaserDelay,GetAttackQuaternion(angleOffset,baseAngle)));
-        }
-    }
-    
-    IEnumerator LaserAttackProcess(LaserConfig cfg,float duration,float preLaserDelay, Quaternion rotation){
-        for (int i = 0; i < 2; i++) {
-            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,i==0,transform.position,rotation);
-            laser.Init(cfg,Faction.Boss,i==0);
-            yield return new WaitForSeconds(i==0?preLaserDelay:duration);
-            laser.Despawn();
-        }
-
-    }
-    //占位，暂未实现
-    IEnumerator LaserChangeWidthProcess(LaserConfig cfg,float from,float to,float duration,bool isBegin){
-        if(isBegin){
-        }
-        yield break;
-    }
-
+    //激光大风车
     IEnumerator RotationLaserAttack(LaserConfig cfg,float duration, int laserCount, float spreadAngle, float baseAngle){
         isPinwheel=true;
         gameObject.transform.position=new Vector3(0,0,-1);//将Boss移动到屏幕中心，避免激光旋转时偏离屏幕
         Laser[] Lasers=new Laser[laserCount];
 
-        moveDir=0;
+        moveDir=0;//方向归零
         for (int j = 0; j < 2; j++){
             for (int i = 0; i < laserCount; i++){
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
             Laser laser=LaserPool.Instance.Get(LaserType.RotateLaser,j==0,transform.position,GetAttackQuaternion(angleOffset,baseAngle));
-            laser.Init(cfg,Faction.Boss,j==0);
+            laser.Init(cfg,EntityFaction,j==0);
             Lasers[i]=laser;
             }
             yield return new WaitForSeconds(j==0?1f:duration);
@@ -335,7 +263,22 @@ public class Boss : MonoBehaviour{
         }
         isPinwheel=false;
     }
+    //慢速全屏子弹攻击（波粒）
+    IEnumerator SlowScatterBulletAttack(BulletConfig cfg,int count,float spread,float interval,int shots){
+        speed=.8f;
+        yield return ContinuousScatterBulletAttack(cfg,count,spread,interval,shots);
+        ApplyAttackSpeed();
+    }
 
+
+    //移动相关
+    //回调Boss速度
+    void ApplyAttackSpeed(){
+        if(isLaser) speed=0;
+        else speed=tempSpeed;
+    }
+
+    //移动逻辑
     void BossMoveAI(){
         if(isPinwheel)return;//正在激光大风车携程，不移动
         if(moveTimer < MaxMoveStep){
@@ -346,6 +289,7 @@ public class Boss : MonoBehaviour{
         }
     }
 
+    //移动执行,direction为方向(1-8)
     void Move(int direction){
         while(direction > 8) direction %= 8; // 确保方向在1到8之间
         if(transform.position.x <= GameControl.boundX && transform.position.x >= -GameControl.boundX && transform.position.y <= GameControl.boundY && transform.position.y >= -GameControl.boundY){
@@ -377,6 +321,8 @@ public class Boss : MonoBehaviour{
             }
         }
     }
+
+    //有延迟的无限循环：用作步数自增
     IEnumerator CountPlus(){
         while(true){
             moveTimer++;
@@ -384,17 +330,25 @@ public class Boss : MonoBehaviour{
         }
     }
 
-    IEnumerator Hitted(){
-        GetComponent<SpriteRenderer>().color = Color.red;
-        yield return new WaitForSeconds(0.05f);
-        GetComponent<SpriteRenderer>().color = color;
-    }
 
-    Quaternion GetAttackQuaternion(float angleOffset=0 ,float baseAngle=0){
-        if(playerTransform==null)return Quaternion.identity;
-        Vector2 playerPosition = playerTransform.position;
-        Vector2 bossPosition = new Vector2(transform.position.x, transform.position.y);
-        float angle=Vector3.SignedAngle(Vector3.up,(playerPosition - bossPosition).normalized,Vector3.forward)+angleOffset+baseAngle;
-        return Quaternion.Euler(0,0,angle);
+    //测试相关
+    #if UNITY_EDITOR
+        void DebugAttack(int i){
+            BossAttackChoice(i);
+            ApplyAttackSpeed();      
+        }
+    void HandBossAttack(){
+        if(Input.GetKeyDown(KeyCode.Alpha1)){DebugAttack(1);}
+        if(Input.GetKeyDown(KeyCode.Alpha2)){DebugAttack(2);}
+        if(Input.GetKeyDown(KeyCode.Alpha3)){DebugAttack(3);}
+        if(Input.GetKeyDown(KeyCode.Alpha4)){DebugAttack(4);}
+        if(Input.GetKeyDown(KeyCode.Alpha5)){DebugAttack(5);}
+        if(Input.GetKeyDown(KeyCode.Alpha6)){DebugAttack(6);}
+        if(Input.GetKeyDown(KeyCode.Alpha7)){DebugAttack(7);}
+        if(Input.GetKeyDown(KeyCode.Alpha8)){DebugAttack(8);}
+        if(Input.GetKeyDown(KeyCode.Alpha9)){DebugAttack(9);}
+        if(Input.GetKeyDown(KeyCode.Alpha0)){DebugAttack(10);}
     }
+#endif
+
 }

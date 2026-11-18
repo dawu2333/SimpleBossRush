@@ -6,7 +6,7 @@ public class Laser : MonoBehaviour{
     private Faction faction;
     private bool isPre;
     private float lifeTime;
-    public int Damage=>config.damage;
+    public float Damage=>config.damage;
     public LaserType Type=>config.type;
     public Faction Faction=>faction;
     public bool Ispre=>isPre;

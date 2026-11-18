@@ -1,6 +1,8 @@
 using UnityEngine;
-public static class InitInstanceData{
-    public static BulletConfig PlayerBulletConfig(){return new BulletConfig(BulletBehavior.NormalBullet,1,50f,ObstacleMode.None,1f,Color.white,BulletShape.Rect);}
+public static class InitInstanceData{//代码形式存储玩家和Boss的攻击形式
+    public static BulletConfig PlayerBulletConfig(){
+        return new BulletConfig(BulletBehavior.NormalBullet,1,50f,ObstacleMode.None,1f,Color.white,BulletShape.Rect);
+    }
     public static BulletConfig BossBulletConfig(int i){
         switch (i){
             case 1:return new BulletConfig(BulletBehavior.NormalBullet,1,30,ObstacleMode.None,1f,Color.white,BulletShape.Round);
@@ -15,10 +17,10 @@ public static class InitInstanceData{
     }
     public static LaserConfig BossLaserConfig(int i){
         switch (i){
-            case 1:return new LaserConfig(LaserType.NormalLaser,3,1f,0);
-            case 2:return new LaserConfig(LaserType.NormalLaser,3,.8f,0);
-            case 3:return new LaserConfig(LaserType.RotateLaser,3,1f,-25);
-            default:return new LaserConfig(LaserType.NormalLaser,3,1f,0);
+            case 1:return new LaserConfig(LaserType.NormalLaser,10,1f,0);
+            case 2:return new LaserConfig(LaserType.NormalLaser,12,.8f,0);
+            case 3:return new LaserConfig(LaserType.RotateLaser,10,1f,-25);
+            default:return new LaserConfig(LaserType.NormalLaser,10,1f,0);
         }
     }
 }
