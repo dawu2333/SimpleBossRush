@@ -2,7 +2,6 @@ using System.Collections;
 using UnityEngine;
 
 public class Player : EntityBase{
-    [SerializeField] private GameObject bulletPrefabs;
     [SerializeField] private float attack_time;//攻击间隔
     private float current_time;//冷却时间
     private readonly float boundX = 17.5f,boundY = 9.5f;
@@ -59,7 +58,7 @@ public class Player : EntityBase{
     }
 
     protected override void OnDamaged(){
-        StartCoroutine(AffectedProcess(false,0.15f,2));
+        StartCoroutine(AffectedProcess(true,new Color32(202,49,108,0),0.075f,2));
         BaseInfo.Affected++;//受击数+1
     }
 

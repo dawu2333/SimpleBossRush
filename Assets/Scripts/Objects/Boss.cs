@@ -85,7 +85,7 @@ public class Boss : EntityBase{
     }
     //受伤钩子实现
     protected override void OnDamaged() {
-        StartCoroutine(AffectedProcess(true,0.025f,1));
+        StartCoroutine(AffectedProcess(false,Color.red,0.025f,1));
     }
 
     void OnTriggerEnter2D(Collider2D collision) {
@@ -107,6 +107,16 @@ public class Boss : EntityBase{
         aim=playerTransform.position;
         return true;
     }
+
+    //连续散射状态钩子实现
+    protected override void OnContinuousScatterFired(int bulletCount) {//散射协程时条件播放
+        speed=.8f;
+        //条件：散射弹幕数为[20-40]
+        if(bulletCount<=40&&bulletCount>=20){audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/gunShot1"));} 
+    }
+
+    //连续散射状态结束钩子实现
+    protected override void OnContinuousScatterFinished() {ApplyAttackSpeed();}
 
     //攻击逻辑
     void BossAttackAI() {
@@ -164,7 +174,7 @@ public class Boss : EntityBase{
             case 5: 
                 isLaser = false; 
                 ScatterBulletAttack(InitInstanceData.BossBulletConfig(5),50,7.2f,0);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/GunShot2")); 
+                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/gunShot2")); 
                 return 3f;//射速很慢，伤害一般，弹速较慢的单词全屏广域攻击
             case 6: 
                 isLaser = false; SingleBulletAttack(InitInstanceData.BossBulletConfig(6));
@@ -173,17 +183,17 @@ public class Boss : EntityBase{
                 return .1f;//射速极快、弹速较快，伤害与弹速一般的自机连续攻击
             case 7: 
                 isLaser = false; 
-                StartCoroutine(SlowScatterBulletAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f, 10)); 
+                StartCoroutine(ContinuousScatterBulletAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f, 10)); 
                 return 6f; // 射速很快，伤害一般，弹速较慢的持续全屏广域攻击(波粒)
             case 8: 
                 isLaser = true; 
                 LaserAttack(InitInstanceData.BossLaserConfig(1),.8f,.5f,8,15,1);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot2"));
+                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railgunShot2"));
                 return 1f;//散射激光
             case 9: 
                 isLaser = true; 
                 LaserAttack(InitInstanceData.BossLaserConfig(2),.4f,.4f,1,10,5f);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railGunShot1"));
+                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railgunShot1"));
                 maxAttackCount=20;
                 return .15f;//快速的激光自机狙
             case 10: 
@@ -262,12 +272,6 @@ public class Boss : EntityBase{
             }
         }
         isPinwheel=false;
-    }
-    //慢速全屏子弹攻击（波粒）
-    IEnumerator SlowScatterBulletAttack(BulletConfig cfg,int count,float spread,float interval,int shots){
-        speed=.8f;
-        yield return ContinuousScatterBulletAttack(cfg,count,spread,interval,shots);
-        ApplyAttackSpeed();
     }
 
 

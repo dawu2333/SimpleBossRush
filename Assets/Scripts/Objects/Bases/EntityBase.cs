@@ -15,8 +15,10 @@ public abstract class EntityBase : MonoBehaviour{
     public abstract Faction EntityFaction{get;}//阵营
     protected abstract bool TryGetAimPosition(out Vector2 aim);//获取目标钩子
     protected abstract void OnDied(); //死亡钩子
-    protected abstract void OnDamaged();
-    protected Color originColor; //保留原色  
+    protected abstract void OnDamaged();//受伤钩子
+    protected virtual void OnContinuousScatterFired(int bulletCount){}//连续散射状态钩子，可选重写
+    protected virtual void OnContinuousScatterFinished(){}//连续散射状态钩子，可选重写
+    protected Color originColor=Color.white; //保留原色,兜底白色  
 
     //受击相关
     //扣血
@@ -28,8 +30,9 @@ public abstract class EntityBase : MonoBehaviour{
             OnDamaged();
         }
         hp-=damage;
-        HpBarControl.UpdateHpBar(hpBar,hp,MaxHP);
-        if(hp<=0.0001f){Kill();}//float容差
+        if(hpBar==null){Debug.LogError("没找到血条预制体");}
+        else {HpBarControl.UpdateHpBar(hpBar,hp,MaxHP);}
+        if(hp<=0.0001f){Kill();}//float容差 
     }
     //识别攻击及其类型
     protected bool TryGetDamage(Collider2D collider,out float damage,out DamageKind kind) {
@@ -51,16 +54,16 @@ public abstract class EntityBase : MonoBehaviour{
     }
     
     //受击协程
-    protected IEnumerator AffectedProcess(bool isBoss,float flashSecond,int times){//闪烁速度/次数
-        canAffected=false;
+    protected IEnumerator AffectedProcess(bool lockInvincible,Color flashColor,float flashSecond,int times){//是否有子弹无敌帧，闪烁速度/次数
+        if(lockInvincible)canAffected=false;//有子弹无敌帧则开启无敌
         var sr=GetComponent<SpriteRenderer>();
         for(int i=0;i<times;i++){
-            sr.color=isBoss?Color.red:new Color32(202,49,108,0);//是boss被打闪红，玩家被打闪烁
+            sr.color=flashColor;//是boss被打闪红，玩家被打闪烁
             yield return new WaitForSeconds(flashSecond);
             sr.color=originColor;
             yield return new WaitForSeconds(flashSecond);
         }
-        canAffected=true;
+        if(lockInvincible)canAffected=true;
     }
 
     //开启受击，设计由Start中Invoke控制
@@ -76,7 +79,6 @@ public abstract class EntityBase : MonoBehaviour{
 
     
     //攻击相关
-
     //获取攻击方位（四元数）
     protected Quaternion GetAttackQuaternion(float angleOffset=0 ,float baseAngle=0){
         if(!TryGetAimPosition(out Vector2 aim))return Quaternion.identity;
@@ -105,10 +107,12 @@ public abstract class EntityBase : MonoBehaviour{
     //持续散射子弹
     protected IEnumerator ContinuousScatterBulletAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float interval, int shots){
         for (int j = 0; j < shots; j++){
+            OnContinuousScatterFired(bulletCount);//钩子待实现
             float baseAngle = j * 8f % 360; // 每次射击角度变化8度
             ScatterBulletAttack(cfg, bulletCount, spreadAngle, baseAngle);
             yield return new WaitForSeconds(interval);
         }
+        OnContinuousScatterFinished();
     }
 
     //激光攻击
