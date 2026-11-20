@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -13,13 +15,15 @@ public class Boss : EntityBase{
     private bool isLaser=false,isPinwheel=false;//是否处于激光发射/旋转激光状态中
     private int moveTimer,moveDir,lastAttack;//移动增量计数器、移动方向标识、上一次攻击序号
     private Transform playerTransform;//玩家位置
-    private int[] BossAttackList;//攻击池
-    private int[] BossAttackList2={1,2,3,4,5,6,8,9,10};//level 5 的额外攻击池：故意不含7，7与激光风车(10) 同时在场时弹幕过密，实测几乎无解
-    private int[] ExtremeAttackList={1,2,3};//极限难度Boss的攻击池，
+    private int[] bossAttackList;//攻击池
+    private int[] bossAttackList2={1,2,3,4,5,6,8,9,10};//level 5 的额外攻击池：故意不含7，7与激光风车(10) 同时在场时弹幕过密，实测几乎无解
+    private int[] extremeAttackList={1,2,3};//极限难度Boss的攻击池，
+    //private Difficulty[] highDifficulties={Difficulty.Hard,Difficulty.Extreme,Difficulty.BossRush};//属于高难的难度列表
     public override Faction EntityFaction => Faction.Boss;//阵营为Boss
 
     void Awake(){
         audioSource=GetComponent<AudioSource>();
+        RigidBodyNeverSleep();
     }
     void Start(){
         InitiateData();
@@ -33,14 +37,14 @@ public class Boss : EntityBase{
         BossAttackAI();
         
         #if UNITY_EDITOR
-        HandBossAttack();//测试手操攻击
+        //HandBossAttack();//测试手操攻击
         #endif
     }
     //数值初始化
     void InitiateData(){
         //初始化基础数值
-        level=BaseInfo.Level;
-        difficulty=BaseInfo.Difficulty;
+        level=BaseInfo.level;
+        difficulty=BaseInfo.difficulty;
         originColor=GetComponent<SpriteRenderer>().color;
         var lv = LevelData.levels[level];
 
@@ -53,19 +57,21 @@ public class Boss : EntityBase{
         }
         
         //难度控制Boss血量/体型/频率/速度/攻击模式等
-        hp = BaseInfo.IsDebug?BaseInfo.BossHP:lv.bossHP;
+        hp = BaseInfo.isDebug?BaseInfo.bossHP:lv.bossHP;
         MaxHP=hp;
         float scale=lv.bossScale;
-        if(difficulty=="Hard"||difficulty=="Extreme")scale*=0.8f;
+        
+        if(DifficultyData.highDifficulties.Contains(difficulty))scale*=0.8f;//难度为高难度时，大小*0.8
         transform.localScale=new Vector3(scale,scale,1);
-        frequency= difficulty switch {
-            "Easy"=>1f,
-            "Normal"=>0.7f,
-            "Hard"=>0.5f,
-            "Extreme"=>0.3f,
+        frequency= difficulty switch {//攻击频率由难度控制
+            Difficulty.Easy=>1f,
+            Difficulty.Normal=>0.7f,
+            Difficulty.Hard=>0.5f,
+            Difficulty.Extreme=>0.3f,
+            Difficulty.BossRush=>0.5f,//BossRush为连战，当前值无意义
             _=>1f
         };
-        BossAttackList=lv.bossAttackPattern;
+        bossAttackList=lv.bossAttackPattern;
         speed=lv.bossSpeed;
 
         //初始化速度/攻击间隔/移动增量/音量/boss颜色/移动方向/攻击方式等基础数值
@@ -123,9 +129,9 @@ public class Boss : EntityBase{
         if(playerTransform==null)return;//找不到玩家不攻击
         current_time += Time.deltaTime;
         if (current_time >= attack_time && attackCount < maxAttackCount) {
-            attack_time=(difficulty!="Extreme"?BossAttackChoice(currentAttack):RandomAttack(currentAttack))*frequency;
+            attack_time=(difficulty!=Difficulty.Extreme?BossAttackChoice(currentAttack):RandomAttack(currentAttack))*frequency;
             if(level==5&&attackCount%2==0){//第五关每两次攻击后随机选择一次攻击方式
-                BossAttackChoice(BossAttackList2[Random.Range(0, BossAttackList2.Length)]);
+                BossAttackChoice(bossAttackList2[Random.Range(0, bossAttackList2.Length)]);
                 attackCount++;
             }
             attackCount++; current_time = 0;
@@ -138,10 +144,10 @@ public class Boss : EntityBase{
     }
     //取得下一个攻击
     int GetNewAttack() {
-        if(BossAttackList.Length==1)return 0;
+        if(bossAttackList.Length==1)return 0;
         int newAttack;
         do {
-            newAttack = difficulty!="Extreme"?BossAttackList[Random.Range(0, BossAttackList.Length)]:ExtremeAttackList[Random.Range(0, ExtremeAttackList.Length)];
+            newAttack = difficulty!=Difficulty.Extreme?bossAttackList[Random.Range(0, bossAttackList.Length)]:extremeAttackList[Random.Range(0, extremeAttackList.Length)];
         } while (newAttack == lastAttack); // 确保新选择的攻击方式与上次不同
         lastAttack = newAttack; // 更新上一次的攻击方式
         return newAttack;
@@ -262,7 +268,8 @@ public class Boss : EntityBase{
         for (int j = 0; j < 2; j++){
             for (int i = 0; i < laserCount; i++){
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
-            Laser laser=LaserPool.Instance.Get(LaserType.RotateLaser,j==0,transform.position,GetAttackQuaternion(angleOffset,baseAngle));
+            Laser laser=LaserPool.Instance.Get(LaserType.RotateLaser,transform.position,GetAttackQuaternion(angleOffset,baseAngle),j==0);
+            if(laser==null){Debug.LogError($"{gameObject.tag}未获取到旋转激光");yield break;};
             laser.Init(cfg,EntityFaction,j==0);
             Lasers[i]=laser;
             }

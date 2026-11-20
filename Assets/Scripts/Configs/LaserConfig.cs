@@ -1,3 +1,5 @@
+public enum LaserType{NormalLaser,RotateLaser};
+public enum LaserVisual{NormalPre,Normal,RotatePre,Rotate}
 //激光属性配置
 public struct LaserConfig{
     public LaserType type;

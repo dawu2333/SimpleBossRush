@@ -1,7 +1,16 @@
 using UnityEngine;
 public static class InitInstanceData{//代码形式存储玩家和Boss的攻击形式
-    public static BulletConfig PlayerBulletConfig(){
-        return new BulletConfig(BulletBehavior.NormalBullet,1,50f,ObstacleMode.None,1f,Color.white,BulletShape.Rect);
+    public static BulletConfig PlayerBulletConfig(int i){
+        switch (i){
+            //Common
+            case 1:return new BulletConfig(BulletBehavior.NormalBullet,1,50f,ObstacleMode.None,1f,Color.white,BulletShape.Rect);
+            //Heavy
+            case 2:return new BulletConfig(BulletBehavior.NormalBullet,2,10,ObstacleMode.Persistent,10f,Color.red,BulletShape.Round);
+            //Scatter
+            case 3:return new BulletConfig(BulletBehavior.NormalBullet,1,30,ObstacleMode.None,1.4f,Color.blue,BulletShape.Round);
+            //默认
+            default:return new BulletConfig(BulletBehavior.NormalBullet,1,50f,ObstacleMode.None,1f,Color.white,BulletShape.Rect);
+        }
     }
     public static BulletConfig BossBulletConfig(int i){
         switch (i){

@@ -8,7 +8,7 @@ public class GameControl : MonoBehaviour{
     private AudioSource audioSource;
     private AudioClip BGM1,BGM2;
     private bool isEscape;
-    private int bossNum=0,EndLevel=5;
+    private int bossNum=0,EndLevel;
     const float Spacing = 14f;//多boss间隔
     public static float boundX=15.4f,boundY=7.4f;//游戏边界
     void Awake() {
@@ -27,13 +27,13 @@ public class GameControl : MonoBehaviour{
     }
     void InitiateGame(){
         isEscape=false;
-
+        EndLevel=LevelData.levels.Length-1;
         //由难度控制音效和boss数量
-        if(BaseInfo.Level<1 || BaseInfo.Level>=LevelData.levels.Length) {BaseInfo.Level=1;}
-        var lv = LevelData.levels[BaseInfo.Level];
+        if(BaseInfo.level<1 || BaseInfo.level>=LevelData.levels.Length) {BaseInfo.level=1;}
+        var lv = LevelData.levels[BaseInfo.level];
         bossNum=lv.bossNum;
         Time.timeScale=1;
-        audioSource.clip=BaseInfo.Level>=3?BGM1:BGM2;   
+        audioSource.clip=BaseInfo.level>=3?BGM1:BGM2;   
         audioSource.volume=0.1f;//音量百分比
         audioSource.Play();
 
@@ -46,13 +46,14 @@ public class GameControl : MonoBehaviour{
     public void BossDie(int level){
         bossNum--;
         if(bossNum<=0){
-            if(level==EndLevel)PlayerPrefsControl.IsPass(true);//尾关通关，设定通关标识为true
-            BaseInfo.IsWin=true;
+            if(level==EndLevel)PlayerPrefsControl.IsPass(true);//尾关通关
+            if(BaseInfo.difficulty==Difficulty.Extreme)PlayerPrefsControl.IsPassEx(true);//Ex难度过关
+            BaseInfo.isWin=true;
             SceneManager.LoadScene("End");
         }
     }
     public void PlayerDie(){
-        BaseInfo.IsWin=false;
+        BaseInfo.isWin=false;
         SceneManager.LoadScene("End");
     }
     void PauseGame(){

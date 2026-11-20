@@ -40,7 +40,7 @@ public class LaserPool: MonoBehaviour{
     }
 
     void OnDestroy(){if(Instance==this)Instance=null;}
-    public Laser Get(LaserType type,bool isPre,Vector3 position,Quaternion rotation){
+    public Laser Get(LaserType type,Vector3 position,Quaternion rotation,bool isPre=false){
         LaserVisual visual=ToVisual(type,isPre);
         if(!pools.TryGetValue(visual,out Queue<Laser> pool)) {
             Debug.LogError($"没有形状({visual})的池子");

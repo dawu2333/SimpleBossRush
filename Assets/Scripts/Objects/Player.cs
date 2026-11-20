@@ -1,6 +1,7 @@
-using System.Collections;
+using System;
 using UnityEngine;
-
+using System.Linq;
+using System.Collections;
 public class Player : EntityBase{
     [SerializeField] private float attack_time;//攻击间隔
     private float current_time;//冷却时间
@@ -9,8 +10,7 @@ public class Player : EntityBase{
     public override Faction EntityFaction => Faction.Player;
     void Awake() {
         mainCamera=Camera.main;
-        var rb = GetComponent<Rigidbody2D>();
-        if(rb != null) rb.sleepMode = RigidbodySleepMode2D.NeverSleep;//唤醒刚体，防止吃不到伤害
+        RigidBodyNeverSleep();
     }
     void Start(){
         Invoke(nameof(EndInvincible), 2);//开局无敌两秒
@@ -28,17 +28,17 @@ public class Player : EntityBase{
         if(attack_time==0)attack_time=0.2f;
         
         //关卡/难度/颜色
-        level=BaseInfo.Level;
-        difficulty=BaseInfo.Difficulty;
+        level=BaseInfo.level;
+        difficulty=BaseInfo.difficulty;
         var lv = LevelData.levels[level];
         originColor=GetComponent<SpriteRenderer>().color;
 
         //血量/攻速/大小
-        hp = BaseInfo.IsDebug?BaseInfo.PlayerHP:lv.playerHP;
+        hp = BaseInfo.isDebug?BaseInfo.playerHP:lv.playerHP;
         MaxHP=hp;
         attack_time/=lv.playerAttackCoef;
         float scale=lv.playerScale;
-        if(difficulty=="Hard"||difficulty=="Extreme")scale*=0.8f;
+        if(DifficultyData.highDifficulties.Contains(difficulty))scale*=0.8f;
         transform.localScale=new Vector3(scale,scale,1);
     }
 
@@ -59,7 +59,7 @@ public class Player : EntityBase{
 
     protected override void OnDamaged(){
         StartCoroutine(AffectedProcess(true,new Color32(202,49,108,0),0.075f,2));
-        BaseInfo.Affected++;//受击数+1
+        BaseInfo.affected++;//受击数+1
     }
 
     protected override void OnDied(){
@@ -74,6 +74,21 @@ public class Player : EntityBase{
         aim=mainCamera.ScreenToWorldPoint(Input.mousePosition);
         return true;
     }
+    
+    //玩家激光实现
+    protected void LaserAttack(LaserConfig cfg,float duration,int laserCount=1,float spreadAngle=0,float baseAngle=0){
+        for (int i = 0; i < laserCount; i++){
+            float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
+            StartCoroutine(LaserAttackProcess(cfg,duration,GetAttackQuaternion(angleOffset,baseAngle)));
+        }
+    }
+    protected IEnumerator LaserAttackProcess(LaserConfig cfg,float duration,Quaternion rotation){
+            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,transform.position,rotation);
+            if(laser==null){Debug.LogError($"{gameObject.tag}未获取到激光");yield break;};
+            laser.Init(cfg,EntityFaction);
+            yield return new WaitForSeconds(duration);
+            laser.Despawn();
+    }
 
     //攻击触发
     void Attack(){
@@ -86,7 +101,13 @@ public class Player : EntityBase{
     }
     //射击
     void Shoot(){
-        SingleBulletAttack(InitInstanceData.PlayerBulletConfig());
+        switch (BaseInfo.weaponKind) {
+            case WeaponKind.Common:SingleBulletAttack(InitInstanceData.PlayerBulletConfig(1));break;
+            case WeaponKind.Heavy:SingleBulletAttack(InitInstanceData.PlayerBulletConfig(2));break;
+            case WeaponKind.Scatter:ScatterBulletAttack(InitInstanceData.PlayerBulletConfig(3),8,7.5f,0);break;
+            case WeaponKind.Laser:LaserAttack(InitInstanceData.BossLaserConfig(2),.4f,1,10,5f);break;//借用，目前有很大问题
+            default:SingleBulletAttack(InitInstanceData.PlayerBulletConfig(1));break;//默认为普通子弹
+        }
     }
 
 

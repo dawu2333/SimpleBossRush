@@ -10,7 +10,7 @@ public abstract class EntityBase : MonoBehaviour{
     [SerializeField] protected Transform hpBar;
     protected float hp,MaxHP;
     protected int level;
-    protected string difficulty;
+    protected Difficulty difficulty;
     protected bool canAffected = true, isDead = false,invincible=true;
     public abstract Faction EntityFaction{get;}//阵营
     protected abstract bool TryGetAimPosition(out Vector2 aim);//获取目标钩子
@@ -36,16 +36,18 @@ public abstract class EntityBase : MonoBehaviour{
     }
     //识别攻击及其类型
     protected bool TryGetDamage(Collider2D collider,out float damage,out DamageKind kind) {
-        if(collider.TryGetComponent(out Bullet bullet)&&bullet.Faction != EntityFaction) {//子弹
-            kind=DamageKind.Instant;
-            damage=bullet.Damage;
-            return true;
-        }else{ //激光
-            Laser laser=collider.GetComponentInParent<Laser>();
-            if (laser != null && laser.Faction != EntityFaction) {
-                kind=DamageKind.Continuous;
-                damage=laser.Damage;
+        if(collider.CompareTag("Bullet")||collider.CompareTag("Laser")){//是子弹或是激光
+            if(collider.TryGetComponent(out Bullet bullet)&&bullet.Faction != EntityFaction) {//子弹
+                kind=DamageKind.Instant;
+                damage=bullet.Damage;
                 return true;
+            }else{ //激光
+                Laser laser=collider.GetComponentInParent<Laser>();
+                if (laser != null && laser.Faction != EntityFaction) {//!
+                    kind=DamageKind.Continuous;
+                    damage=laser.Damage;
+                    return true;
+                }
             }
         }
         damage=0;
@@ -125,12 +127,17 @@ public abstract class EntityBase : MonoBehaviour{
     //激光攻击协程
     protected IEnumerator LaserAttackProcess(LaserConfig cfg,float duration,float preLaserDelay, Quaternion rotation){
         for (int i = 0; i < 2; i++) {
-            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,i==0,transform.position,rotation);
+            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,transform.position,rotation,i==0);
+            if(laser==null){Debug.LogError($"{gameObject.tag}未获取到激光");yield break;};
             laser.Init(cfg,EntityFaction,i==0);
             yield return new WaitForSeconds(i==0?preLaserDelay:duration);
             laser.Despawn();
         }
     }
     
-    
+    protected void RigidBodyNeverSleep() {
+        var rb = GetComponent<Rigidbody2D>();
+        if(rb != null) rb.sleepMode = RigidbodySleepMode2D.NeverSleep;//唤醒刚体，防止吃不到伤害
+    }
+
 }

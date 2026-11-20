@@ -1,5 +1,4 @@
 using UnityEngine;
-
 public class Bullet : MonoBehaviour{
     private BulletConfig config;
     private Faction faction;
@@ -18,7 +17,6 @@ public class Bullet : MonoBehaviour{
         IsOutBound();
     }
 
-    
     void OnTriggerEnter2D(Collider2D other){//只负责撞到玩家/boss/bullet后的判断
         if (other.TryGetComponent(out EntityBase entity)&&entity.EntityFaction!=faction){//碰到非自身阵营的实体，直接回收
             Despawn();
