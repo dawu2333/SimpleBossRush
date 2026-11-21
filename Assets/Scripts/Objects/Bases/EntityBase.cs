@@ -16,8 +16,11 @@ public abstract class EntityBase : MonoBehaviour{
     protected abstract bool TryGetAimPosition(out Vector2 aim);//获取目标钩子
     protected abstract void OnDied(); //死亡钩子
     protected abstract void OnDamaged();//受伤钩子
-    protected virtual void OnContinuousScatterFired(int bulletCount){}//连续散射状态钩子，可选重写
-    protected virtual void OnContinuousScatterFinished(){}//连续散射状态钩子，可选重写
+    protected virtual void OnContinuousScatterFired(int bulletCount){}//连续散射开火钩子，可选重写
+    protected virtual void OnContinuousScatterStarted(){}//连续散射状态进行钩子，可选
+    protected virtual void OnContinuousScatterFinished(){}//连续散射状态结束钩子，可选
+    protected virtual void OnLaserStarted(){}//激光状态进行钩子
+    protected virtual void OnLaserFinished(){}//激光状态结束钩子
     protected Color originColor=Color.white; //保留原色,兜底白色  
 
     //受击相关
@@ -108,8 +111,9 @@ public abstract class EntityBase : MonoBehaviour{
     }
     //持续散射子弹
     protected IEnumerator ContinuousScatterBulletAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float interval, int shots){
+        OnContinuousScatterStarted();//连续射击状态钩子
         for (int j = 0; j < shots; j++){
-            OnContinuousScatterFired(bulletCount);//钩子待实现
+            OnContinuousScatterFired(bulletCount);
             float baseAngle = j * 8f % 360; // 每次射击角度变化8度
             ScatterBulletAttack(cfg, bulletCount, spreadAngle, baseAngle);
             yield return new WaitForSeconds(interval);
@@ -120,19 +124,22 @@ public abstract class EntityBase : MonoBehaviour{
     //激光攻击
     protected void LaserAttack(LaserConfig cfg,float preLaserDelay,float duration,  int laserCount=1, float spreadAngle=0, float baseAngle=0){
         for (int i = 0; i < laserCount; i++){
+            OnLaserStarted();
             float angleOffset = (i - laserCount / 2.0f) * spreadAngle;
             StartCoroutine(LaserAttackProcess(cfg, duration,preLaserDelay,GetAttackQuaternion(angleOffset,baseAngle)));
         }
     }
     //激光攻击协程
     protected IEnumerator LaserAttackProcess(LaserConfig cfg,float duration,float preLaserDelay, Quaternion rotation){
+        var pos=transform.position;
         for (int i = 0; i < 2; i++) {
-            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,transform.position,rotation,i==0);
-            if(laser==null){Debug.LogError($"{gameObject.tag}未获取到激光");yield break;};
+            Laser laser = LaserPool.Instance.Get(LaserType.NormalLaser,pos,rotation,i==0);
+            if(laser==null){Debug.LogError($"{gameObject.tag}未获取到激光");break;};
             laser.Init(cfg,EntityFaction,i==0);
             yield return new WaitForSeconds(i==0?preLaserDelay:duration);
             laser.Despawn();
         }
+        OnLaserFinished();
     }
     
     protected void RigidBodyNeverSleep() {

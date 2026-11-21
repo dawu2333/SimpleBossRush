@@ -9,7 +9,7 @@ public enum BulletShape{Round,Rect,Head,Arrow}
 public enum Faction{ Player, Boss }//子弹阵营
 public enum ObstacleMode{None,SingleUse,Persistent}
 //子弹属性配置
-public struct BulletConfig{
+public struct BulletConfig:IAttackConfig{
     public BulletBehavior behavior;
     public float damage;
     public float speed;

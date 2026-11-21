@@ -34,7 +34,7 @@ public class GameControl : MonoBehaviour{
         bossNum=lv.bossNum;
         Time.timeScale=1;
         audioSource.clip=BaseInfo.level>=3?BGM1:BGM2;   
-        audioSource.volume=0.1f;//音量百分比
+        audioSource.volume=0.3f;//音量百分比
         audioSource.Play();
 
         float startX = -(lv.bossNum - 1) * Spacing / 2f;

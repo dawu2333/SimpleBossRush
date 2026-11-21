@@ -1,5 +1,7 @@
 using UnityEngine;
 public static class InitInstanceData{//代码形式存储玩家和Boss的攻击形式
+
+    private readonly static Color[] colors={Color.red,Color.blue,Color.cyan,Color.black,Color.green,Color.yellow};
     public static BulletConfig PlayerBulletConfig(int i){
         switch (i){
             //Common
@@ -30,6 +32,41 @@ public static class InitInstanceData{//代码形式存储玩家和Boss的攻击�
             case 2:return new LaserConfig(LaserType.NormalLaser,12,.8f,0);
             case 3:return new LaserConfig(LaserType.RotateLaser,10,1f,-25);
             default:return new LaserConfig(LaserType.NormalLaser,10,1f,0);
+        }
+    }
+
+    public static IAttackConfig BossRandomAttackConfig(int i){
+        switch (i){
+            case 1:return new BulletConfig(
+                    BulletBehavior.NormalBullet,
+                    Random.Range(1,3),
+                    Random.Range(25f,90f),
+                    Random.Range(0,2)>0?ObstacleMode.None:
+                    Random.Range(0,2)>0?ObstacleMode.SingleUse:ObstacleMode.Persistent,
+                    Random.Range(2.5f,6),
+                    colors[Random.Range(0,colors.Length)],
+                    BulletShape.Round);
+            case 2:return new BulletConfig(
+                    BulletBehavior.NormalBullet,
+                    Random.Range(1,3),
+                    Random.Range(25f,55f),
+                    Random.Range(0,2)>0?ObstacleMode.None:Random.Range(0,2)>0?
+                    ObstacleMode.SingleUse:ObstacleMode.Persistent,
+                    Random.Range(0.8f,2),colors[Random.Range(0,colors.Length)],
+                    BulletShape.Round);
+            case 3:return new LaserConfig(
+                    LaserType.NormalLaser,
+                    Random.Range(1,3),
+                    Random.Range(.4f,.8f));
+            default:return new BulletConfig(//默认是1
+                    BulletBehavior.NormalBullet,
+                    Random.Range(1,3),
+                    Random.Range(25f,90f),
+                    Random.Range(0,2)>0?ObstacleMode.None:
+                    Random.Range(0,2)>0?ObstacleMode.SingleUse:ObstacleMode.Persistent,
+                    Random.Range(2.5f,6),
+                    colors[Random.Range(0,colors.Length)],
+                    BulletShape.Round);
         }
     }
 }
