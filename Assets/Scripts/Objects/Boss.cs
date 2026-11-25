@@ -16,8 +16,6 @@ public class Boss : EntityBase{
     private bool isPinwheel=false;//是否处于旋转激光状态中
     private int moveTimer,moveDir,lastAttack;//移动增量计数器、移动方向标识、上一次攻击序号
     private Transform playerTransform;//玩家位置
-    
-
     public override Faction EntityFaction => Faction.Boss;//阵营为Boss
 
     void Awake(){
@@ -112,9 +110,10 @@ public class Boss : EntityBase{
         aim=playerTransform.position;
         return true;
     }
-    protected override void OnContinuousScatterFired(int bulletCount) {//散射开火时条件播放
-        //条件：散射弹幕数为[20-40]
-        if(bulletCount<=40&&bulletCount>=20){audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/gunShot1"));} 
+    protected override void OnContinuousScatterFired() {
+        var clip=BossAttackData.bossBulletAttackAudios.GetValueOrDefault("ContinuousScatterBulletAttack1");
+        if (clip!=null) audioSource.PlayOneShot(clip);
+        else Debug.LogError($"{gameObject}的持续散射攻击无音效");
     }
     //连续散射状态钩子实现
     protected override void OnContinuousScatterStarted() {//散射协程时条件播放
@@ -122,7 +121,6 @@ public class Boss : EntityBase{
         else {Debug.Log("开始散射时活动散射协程小于0");return;}
         RefreshSpeed();
     }
-    //持续散射音效钩子实现
     //连续散射状态结束钩子实现
     protected override void OnContinuousScatterFinished() {
         if(activeScatters>0)activeScatters--;
@@ -148,16 +146,17 @@ public class Boss : EntityBase{
         AttackDef def;
         current_time += Time.deltaTime;
         if (current_time >= interval && attackCount < maxAttackCount) {//累加时间>间隔且攻击次数<最大攻击次数时，攻击
-
             def=difficulty!=Difficulty.Extreme?
                 BossAttackChoice(currentAttack):
                 RandomAttack(currentAttack);
-            interval=def.Interval*frequency;
+            if(def.Sound != null) audioSource.PlayOneShot(def.Sound);
+            interval=def.IsLaser?def.Interval:def.Interval*frequency;//是激光就不*频率加快攻击
             if(def.MaxShots > 0) maxAttackCount = def.MaxShots;
 
-            if(level==5&&attackCount%2==0){//第五关每两次攻击后随机选择一次攻击方式
-                BossAttackChoice(BossAttackData.extraBossAttackList[Random.Range(0, BossAttackData.extraBossAttackList.Length)]);
-                attackCount++;
+            if(level==5&&attackCount%2==0){//额外攻击：第五关每两次攻击后随机选择一次攻击方式
+                var tDef=BossAttackChoice(BossAttackData.extraBossAttackList[Random.Range(0, BossAttackData.extraBossAttackList.Length)]);
+                if(tDef.Sound != null) audioSource.PlayOneShot(tDef.Sound);
+                attackCount++;//额外攻击算作攻击次数，加压用
             }
             attackCount++; //攻击次数+1
             current_time = 0;//攻击累加时间清零
@@ -185,69 +184,72 @@ public class Boss : EntityBase{
         switch(i){
             case 1: 
                 SingleBulletAttack(InitInstanceData.BossBulletConfig(1));
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot1")); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(1);//所有属性均一般的普通短连射
+                return BossAttackData.GetBossAttacks(1);//所有属性均一般的普通短连射
             case 2: 
                 SingleBulletAttack(InitInstanceData.BossBulletConfig(2));
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/283")); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(2);//射速较快且弹速快，伤害一般的攻击
+                return BossAttackData.GetBossAttacks(2);//射速较快且弹速快，伤害一般的攻击
             case 3: 
                 SingleBulletAttack(InitInstanceData.BossBulletConfig(3));
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/510")); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(3);//射速和弹速较慢，伤害较大的攻击
+                return BossAttackData.GetBossAttacks(3);//射速和弹速较慢，伤害较大的攻击
             case 4: 
                 ScatterBulletAttack(InitInstanceData.BossBulletConfig(4),8,7.5f,0);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/406")); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(4);//射速较慢，伤害一般，弹速些微慢的八发子弹扇形攻击
+                return BossAttackData.GetBossAttacks(4);//射速较慢，伤害一般，弹速些微慢的八发子弹扇形攻击
             case 5: 
                 ScatterBulletAttack(InitInstanceData.BossBulletConfig(5),50,7.2f,0);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/gunShot2")); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(5);//射速很慢，伤害一般，弹速较慢的单词全屏广域攻击
+                return BossAttackData.GetBossAttacks(5);//射速很慢，伤害一般，弹速较慢的单词全屏广域攻击
             case 6: 
                 SingleBulletAttack(InitInstanceData.BossBulletConfig(6));
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/rifleGunShot2")); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(6);//射速极快、弹速较快，伤害与弹速一般的自机连续攻击
+                return BossAttackData.GetBossAttacks(6);//射速极快、弹速较快，伤害与弹速一般的自机连续攻击
             case 7: 
-                StartCoroutine(ContinuousScatterBulletAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f, 10)); 
-                return BossAttackData.BossAttacks.GetValueOrDefault(7); // 射速很快，伤害一般，弹速较慢的持续全屏广域攻击(波粒)
+                StartCoroutine(ContinuousScatterBulletAttack(InitInstanceData.BossBulletConfig(7), level!=5?40:30, level!=5?9:12, 0.5f*frequency, 10)); 
+                return BossAttackData.GetBossAttacks(7); // 射速很快，伤害一般，弹速较慢的持续全屏广域攻击(波粒)
             case 8: 
                 LaserAttack(InitInstanceData.BossLaserConfig(1),.8f,.5f,8,15,1);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railgunShot2"));
-                return BossAttackData.BossAttacks.GetValueOrDefault(8);//散射激光
+                return BossAttackData.GetBossAttacks(8);//散射激光
             case 9: 
                 LaserAttack(InitInstanceData.BossLaserConfig(2),.4f,.4f,1,10,5f);
-                audioSource.PlayOneShot(Resources.Load<AudioClip>("AudioClip/railgunShot1"));
-                return BossAttackData.BossAttacks.GetValueOrDefault(9);//快速的激光自机狙
+                return BossAttackData.GetBossAttacks(9);//快速的激光自机狙
             case 10: 
                 StartCoroutine(RotationLaserAttack(InitInstanceData.BossLaserConfig(3),10,level!=5?5:4,level!=5?36:45,0));
-                return BossAttackData.BossAttacks.GetValueOrDefault(10);//激光大风车
+                return BossAttackData.GetBossAttacks(10);//激光大风车
         }
-        return BossAttackData.BossAttacks.GetValueOrDefault(1);//默认返回1
+        return BossAttackData.GetBossAttacks(1);//默认返回1
     }
     //随机攻击
     AttackDef RandomAttack(int i){
+        if (i < 1 || i > 3) {return BossAttackData.BossRandomAttacks(1);}//返回默认攻击
+        AttackDef attackDef;
+        float gap;//内层间隔
+        int innerShots;//内层波次
         switch(i){
             case 1: 
                 SingleBulletAttack((BulletConfig)InitInstanceData.BossRandomAttackConfig(1));
-                return BossAttackData.BossRandomAttacks(1);
+                attackDef= BossAttackData.BossRandomAttacks(1);break;
             case 2: 
+                gap=Random.Range(.5f,1f);
+                innerShots=Random.Range(3,7);
                 StartCoroutine(ContinuousScatterBulletAttack(
                     (BulletConfig)InitInstanceData.BossRandomAttackConfig(2), 
                     Random.Range(20,40),
                     Random.Range(5,20), 
-                    Random.Range(.5f,1f), 
-                    Random.Range(3,7))); 
-                return BossAttackData.BossRandomAttacks(2);
+                    gap*frequency, innerShots)); 
+                attackDef= BossAttackData.BossRandomAttacks(2,1,innerShots * gap + 1f);break;//间隙=间隔*波次+缓冲
             case 3: 
+                innerShots=Random.Range(2,8);
+                float preLaserDelay=Random.Range(.3f,.9f);
+                float duration=Random.Range(.4f,1f);
                 LaserAttack(
                     (LaserConfig)InitInstanceData.BossRandomAttackConfig(3),
-                    Random.Range(.3f,.9f),
-                    Random.Range(.4f,1f),
+                    preLaserDelay,
+                    duration,
                     Random.Range(1,8),
                     Random.Range(8,14),5);
-                return BossAttackData.BossRandomAttacks(3);
+                attackDef= BossAttackData.BossRandomAttacks(3,innerShots,preLaserDelay+duration+.2f);break;//.2f为缓冲
+            default:
+                Debug.LogError($"错误的随机攻击方式输入({i})");
+                attackDef=BossAttackData.BossRandomAttacks(1);break;
         }
-        return BossAttackData.BossRandomAttacks(1);
+        return attackDef;
     }
 
     //激光大风车

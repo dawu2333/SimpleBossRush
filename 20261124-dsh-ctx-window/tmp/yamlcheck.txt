@@ -1,0 +1,5 @@
+entries=8
+defaultContextWindow=1048576 typeof=number
+models=kimi/kimi-k3.1-pro-highspeed,MiniMax/MiniMax-M3.1-Flash,deepseek-v4.1-flash-1017,qwen3.8-max-0902,glm-5.3
+alibabaKeys=displayName,apiKeyEnv,api,baseURL,defaultContextWindow,models
+permissionPresets=read-only,workspace-write,danger-full-access,full-access-ask

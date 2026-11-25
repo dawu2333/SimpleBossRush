@@ -16,7 +16,7 @@ public abstract class EntityBase : MonoBehaviour{
     protected abstract bool TryGetAimPosition(out Vector2 aim);//获取目标钩子
     protected abstract void OnDied(); //死亡钩子
     protected abstract void OnDamaged();//受伤钩子
-    protected virtual void OnContinuousScatterFired(int bulletCount){}//连续散射开火钩子，可选重写
+    protected virtual void OnContinuousScatterFired(){}//连续散射开火钩子，可选重写
     protected virtual void OnContinuousScatterStarted(){}//连续散射状态进行钩子，可选
     protected virtual void OnContinuousScatterFinished(){}//连续散射状态结束钩子，可选
     protected virtual void OnLaserStarted(){}//激光状态进行钩子
@@ -113,7 +113,7 @@ public abstract class EntityBase : MonoBehaviour{
     protected IEnumerator ContinuousScatterBulletAttack(BulletConfig cfg, int bulletCount, float spreadAngle, float interval, int shots){
         OnContinuousScatterStarted();//连续射击状态钩子
         for (int j = 0; j < shots; j++){
-            OnContinuousScatterFired(bulletCount);
+            OnContinuousScatterFired();
             float baseAngle = j * 8f % 360; // 每次射击角度变化8度
             ScatterBulletAttack(cfg, bulletCount, spreadAngle, baseAngle);
             yield return new WaitForSeconds(interval);
